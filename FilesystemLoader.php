@@ -25,6 +25,14 @@ use \Mustache_Loader_FilesystemLoader;
 class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
 {
     private $baseDir;
+
+    private $publicDir = null;
+    private $publicURL = '';
+    private $assets = array(
+        array('*.css', '<link href="%s" media="all" rel="stylesheet" type="text/css" />'),
+        array('*.js', '<script src="%s" type="text/javascript"></script>')
+    );
+
     private $basename = 'template';
     private $extension = '.mustache';
     private $templates = array();
@@ -47,17 +55,84 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
             throw new Mustache_Exception_RuntimeException(sprintf('FilesystemLoader baseDir must be a directory: %s', $baseDir));
         }
 
-        if (array_key_exists('extension', $options)) {
-            if (empty($options['extension'])) {
-                $this->extension = '';
-            } else {
-                $this->extension = '.' . ltrim($options['extension'], '.');
+        foreach ($options as $key => $option) {
+            switch ($key) {
+                case 'extension':
+                    if (empty($options['extension'])) {
+                        $this->extension = '';
+                    } else {
+                        $this->extension = '.' . ltrim($options['extension'], '.');
+                    }
+                break;
+                case 'publicDir':
+                    $options['publicDir'] = trim($options['publicDir']);
+
+                    if (strlen($options['publicDir']) > 0 && realpath($options['publicDir'])) {
+                        $this->publicDir = realpath($options['publicDir']);
+                    }
+                break;
+                case 'assets':
+                    if (!is_array($options['assets'])) {
+                        break;
+                    }
+
+                    $this->assets = $options['assets'];
+                break;
+                case 'basename':
+                    $options['basename'] = trim($options['basename']);
+
+                    if (strlen($options['basename']) > 0) {
+                        $this->basename = $options['basename'];
+                    }
+                break;
+                case 'publicURL':
+                    $options['publicURL'] = rtrim(trim($options['publicURL']), '/');
+
+                    if (strlen($options['publicURL']) > 0) {
+                        $this->publicURL = $options['publicURL'];
+                    }
+                default:
+                break;
             }
         }
 
-        if (array_key_exists('basename', $options) && strlen(trim($options['basename'])) > 0) {
-            $this->basename = trim($options['basename']);
+        if ($this->publicDir===null) {
+            $this->publicDir = $this->baseDir;
         }
+    }
+
+    /**
+     * Helper function for loading a Mustache file by name.
+     *
+     * @throws Mustache_Exception_UnknownTemplateException If a template file is not found.
+     *
+     * @param string $name
+     *
+     * @return string Mustache Template source
+     */
+    protected function loadFile($name)
+    {
+        $fileName = $this->getFileName($name);
+
+        if (!file_exists($fileName)) {
+            throw new Mustache_Exception_UnknownTemplateException($name);
+        }
+
+        $template = trim(file_get_contents($fileName))."\n";
+
+        foreach ($this->assets as &$asset) {
+            if (count($asset)===2 && isset($asset[0]) && isset($asset[1]) && is_string($asset[0]) && is_string($asset[1])) {
+                $assetPattern = dirname($fileName).'/'.$asset[0];
+                $assetFiles   = glob($assetPattern, GLOB_NOSORT);
+
+                foreach ($assetFiles as $assetFile) {
+                    $template.= sprintf($asset[1], $this->publicURL.str_replace($this->publicDir, '', $assetFile))."\n";
+                    $emitedAsset = true;
+                }
+            }
+        }
+
+        return $template;
     }
 
     /**
