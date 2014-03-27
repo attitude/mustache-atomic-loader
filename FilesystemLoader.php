@@ -123,7 +123,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         foreach ($this->assets as &$asset) {
             if (count($asset)===2 && isset($asset[0]) && isset($asset[1]) && is_string($asset[0]) && is_string($asset[1])) {
                 $assetPattern = dirname($fileName).'/'.$asset[0];
-                $assetFiles   = glob($assetPattern, GLOB_NOSORT);
+                $assetFiles   = glob($assetPattern);
 
                 foreach ($assetFiles as $assetFile) {
                     $template.= sprintf($asset[1], $this->publicURL.str_replace($this->publicDir, '', $assetFile))."\n";
