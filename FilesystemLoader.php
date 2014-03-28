@@ -37,6 +37,8 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
     private $extension = '.mustache';
     private $templates = array();
 
+    private $enableFiltersPragma = true;
+
     /**
      * Mustache filesystem Loader constructor (Change: Added basename option).
      *
@@ -91,6 +93,10 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                     if (strlen($options['publicURL']) > 0) {
                         $this->publicURL = $options['publicURL'];
                     }
+                break;
+                case 'enableFiltersPragma':
+                    $this->enableFiltersPragma = !! $options['enableFiltersPragma'];
+                break;
                 default:
                 break;
             }
@@ -118,7 +124,8 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
             throw new Mustache_Exception_UnknownTemplateException($name);
         }
 
-        $template = trim(file_get_contents($fileName))."\n";
+        $template = $this->enableFiltersPragma ? "{{%FILTERS}}\n" : "";
+        $template.= trim(file_get_contents($fileName))."\n";
 
         foreach ($this->assets as &$asset) {
             if (count($asset)===2 && isset($asset[0]) && isset($asset[1]) && is_string($asset[0]) && is_string($asset[1])) {
