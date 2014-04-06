@@ -121,7 +121,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         $fileName = $this->getFileName($name);
 
         if (!file_exists($fileName)) {
-            throw new Mustache_Exception_UnknownTemplateException($name);
+            throw new \Mustache_Exception_UnknownTemplateException($name);
         }
 
         $template = $this->enableFiltersPragma ? "{{%FILTERS}}\n" : "";
