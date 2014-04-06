@@ -38,6 +38,16 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         array('*.js', '<script src="%s" type="text/javascript"></script>')
     );
 
+    /**
+     * @var array      Hashes of assets that have been already loaded within this loader.
+     */
+    private $assetsIndex = array();
+
+    /**
+     * @var bool       Whether to echo the asset in the template. Default is true for develop purposes
+     */
+    private $assetsEmit = true;
+
     private $basename = 'template';
     private $extension = '.mustache';
     private $templates = array();
@@ -112,6 +122,18 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         }
     }
 
+    public function getListOfAssets()
+    {
+        // Loop asset types to include (external .css or .js)
+        foreach ($this->assets as $i => &$asset) {
+            if (!isset($this->assetsIndex[$i]['definition'])) {
+                $this->assetsIndex[$i]['definition'] = $asset;
+            }
+        }
+
+        return $this->assetsIndex;
+    }
+
     /**
      * Helper function for loading a Mustache file by name.
      *
@@ -134,15 +156,26 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         $template.= trim(file_get_contents($fileName))."\n";
 
         // Loop asset types to include (external .css or .js)
-        foreach ($this->assets as &$asset) {
+        foreach ($this->assets as $i => &$asset) {
             // Check integrity (not perfect)
             if (count($asset)===2 && isset($asset[0]) && isset($asset[1]) && is_string($asset[0]) && is_string($asset[1])) {
                 $assetPattern = dirname($fileName).'/'.$asset[0];
                 $assetFiles   = glob($assetPattern);
 
                 foreach ($assetFiles as $assetFile) {
-                    $template.= sprintf($asset[1], $this->publicURL.str_replace($this->publicDir, '', $assetFile))."\n";
-                    $emitedAsset = true;
+                    $hash = md5($assetFile);
+
+                    // Included previously?
+                    if (isset($this->assetsIndex[$i]['assets'][$hash])) {
+                        continue; // with next asset
+                    }
+
+                    if ($this->assetsEmit) {
+                        $sprintf_tpl = '<!--[#Asset]('.$i.'-'.$hash.')-->'.$asset[1].'<!--[/Asset]-->'."\n";
+                        $template.= sprintf($sprintf_tpl, $this->publicURL.str_replace($this->publicDir, '', $assetFile));
+                    }
+
+                    $this->assetsIndex[$i]['assets'][$hash] = $assetFile;
                 }
             } else {
                 throw new HTTPException(500, 'Atomic loader assets must be defined as an array(glob() expression, sprintf() template).');
