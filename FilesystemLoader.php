@@ -31,22 +31,14 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
 
     /**
      * @var array     Array of assets, where assets item is defined as an
-     *                `array((string) 'glob() expression', string 'sprintf() template')`.
+     *                `array('glob' => (string) 'relative glob() expression', 'template' => (string) 'sprintf() template')`.
      */
-    private $assets = array(
-        array('*.css', '<link href="%s" media="all" rel="stylesheet" type="text/css" />'),
-        array('*.js', '<script src="%s" type="text/javascript"></script>')
-    );
+    private $assets = array();
 
     /**
      * @var array      Hashes of assets that have been already loaded within this loader.
      */
     private $assetsIndex = array();
-
-    /**
-     * @var bool       Whether to echo the asset in the template. Default is true for develop purposes
-     */
-    private $assetsEmit = true;
 
     private $basename = 'template';
     private $extension = '.mustache';
@@ -88,25 +80,38 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                         $this->publicDir = realpath($options['publicDir']);
                     }
                 break;
+                case 'publicURL':
+                    $options['publicURL'] = rtrim(trim($options['publicURL']), '/');
+
+                    if (strlen($options['publicURL']) > 0) {
+                        $this->publicURL = $options['publicURL'];
+                    }
+                break;
                 case 'assets':
                     if (!is_array($options['assets'])) {
                         break;
                     }
 
-                    $this->assets = $options['assets'];
+                    foreach ($options['assets'] as &$asset) {
+                        // Check integrity
+                        if (isset($asset['glob'])
+                         && is_string($asset['glob'])
+                         && isset($asset['template'])
+                         && is_string($asset['template'])
+                         && preg_match('/type="(?P<type>.+?)"/', $asset['template'], $typematch)
+                         ) {
+                            $asset['type'] = $typematch['type'];
+                            $this->assets[] = $asset;
+                        } else {
+                            trigger_error('Atomic loader: Unexpected assets definition.', E_USER_WARNING);
+                        }
+                    }
                 break;
                 case 'basename':
                     $options['basename'] = trim($options['basename']);
 
                     if (strlen($options['basename']) > 0) {
                         $this->basename = $options['basename'];
-                    }
-                break;
-                case 'publicURL':
-                    $options['publicURL'] = rtrim(trim($options['publicURL']), '/');
-
-                    if (strlen($options['publicURL']) > 0) {
-                        $this->publicURL = $options['publicURL'];
                     }
                 break;
                 case 'enableFiltersPragma':
@@ -122,16 +127,20 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         }
     }
 
-    public function getListOfAssets()
+    public static function getAssetDefaults()
     {
-        // Loop asset types to include (external .css or .js)
-        foreach ($this->assets as $i => &$asset) {
-            if (!isset($this->assetsIndex[$i]['definition'])) {
-                $this->assetsIndex[$i]['definition'] = $asset;
-            }
-        }
-
-        return $this->assetsIndex;
+        return array(
+            array(
+                'glob'     => '*.css',
+                'template' => '<link data-concantenate="true" href="%s" media="all" rel="stylesheet" type="text/css" />',
+                'regex'    => '/ +?<.+?data-concantenate="true".*(?:href|src)="(?P<url>.+?)?".*?type="(?P<type>.+?)".*?\/>\n?/'
+            ),
+            array(
+                'glob'     => '*.js',
+                'template' => '<script data-concantenate="true" src="%s" type="text/javascript"></script>',
+                'regex'    => '/ +?<.+?data-concantenate="true".*(?:href|src)="(?P<url>.+?)?".*?type="(?P<type>.+?)".*?<\/script>\n?/'
+            )
+        );
     }
 
     /**
@@ -156,29 +165,21 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         $template.= trim(file_get_contents($fileName))."\n";
 
         // Loop asset types to include (external .css or .js)
-        foreach ($this->assets as $i => &$asset) {
-            // Check integrity (not perfect)
-            if (count($asset)===2 && isset($asset[0]) && isset($asset[1]) && is_string($asset[0]) && is_string($asset[1])) {
-                $assetPattern = dirname($fileName).'/'.$asset[0];
-                $assetFiles   = glob($assetPattern);
+        foreach ($this->assets as &$asset) {
+            $assetPattern = dirname($fileName).'/'.trim($asset['glob'], '/');
+            $assetFiles   = glob($assetPattern);
 
-                foreach ($assetFiles as $assetFile) {
-                    $hash = md5($assetFile);
+            foreach ($assetFiles as $assetFile) {
+                $hash = md5($assetFile);
 
-                    // Included previously?
-                    if (isset($this->assetsIndex[$i]['assets'][$hash])) {
-                        continue; // with next asset
-                    }
-
-                    if ($this->assetsEmit) {
-                        $sprintf_tpl = '<!--[#Asset]('.$i.'-'.$hash.')-->'.$asset[1].'<!--[/Asset]-->'."\n";
-                        $template.= sprintf($sprintf_tpl, $this->publicURL.str_replace($this->publicDir, '', $assetFile));
-                    }
-
-                    $this->assetsIndex[$i]['assets'][$hash] = $assetFile;
+                // Included previously?
+                if (isset($this->assetsIndex[$asset['type']]['assets'][$hash])) {
+                    continue; // with next asset
                 }
-            } else {
-                throw new HTTPException(500, 'Atomic loader assets must be defined as an array(glob() expression, sprintf() template).');
+
+                $template.= sprintf(trim($asset['template'])."\n", $this->publicURL.str_replace($this->publicDir, '', $assetFile));
+
+                $this->assetsIndex[$asset['type']]['assets'][$hash] = $assetFile;
             }
         }
 
