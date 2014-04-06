@@ -28,6 +28,11 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
 
     private $publicDir = null;
     private $publicURL = '';
+
+    /**
+     * @var array     Array of assets, where assets item is defined as an
+     *                `array((string) 'glob() expression', string 'sprintf() template')`.
+     */
     private $assets = array(
         array('*.css', '<link href="%s" media="all" rel="stylesheet" type="text/css" />'),
         array('*.js', '<script src="%s" type="text/javascript"></script>')
@@ -124,10 +129,13 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
             throw new \Mustache_Exception_UnknownTemplateException($name);
         }
 
+        // Enable filters pragma as if it was explicitly defined in the template
         $template = $this->enableFiltersPragma ? "{{%FILTERS}}\n" : "";
         $template.= trim(file_get_contents($fileName))."\n";
 
+        // Loop asset types to include (external .css or .js)
         foreach ($this->assets as &$asset) {
+            // Check integrity (not perfect)
             if (count($asset)===2 && isset($asset[0]) && isset($asset[1]) && is_string($asset[0]) && is_string($asset[1])) {
                 $assetPattern = dirname($fileName).'/'.$asset[0];
                 $assetFiles   = glob($assetPattern);
@@ -136,6 +144,8 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                     $template.= sprintf($asset[1], $this->publicURL.str_replace($this->publicDir, '', $assetFile))."\n";
                     $emitedAsset = true;
                 }
+            } else {
+                throw new HTTPException(500, 'Atomic loader assets must be defined as an array(glob() expression, sprintf() template).');
             }
         }
 
