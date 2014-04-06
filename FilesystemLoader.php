@@ -59,7 +59,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         }
 
         if (!is_dir($this->baseDir)) {
-            throw new Mustache_Exception_RuntimeException(sprintf('FilesystemLoader baseDir must be a directory: %s', $baseDir));
+            throw new \Mustache_Exception_RuntimeException(sprintf('FilesystemLoader baseDir must be a directory: %s', $baseDir));
         }
 
         foreach ($options as $key => $option) {
