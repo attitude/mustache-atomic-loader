@@ -73,11 +73,13 @@ class AtomicLoader_AssetsConcantenator
                          && is_string($asset['glob'])
                          && isset($asset['template'])
                          && is_string($asset['template'])
-                         && isset($asset['regex'])
+                         && isset($asset['regex']) // regex to match assets in HTML code
                          && is_string($asset['regex'])
+                         && strstr($asset['regex'], '(?P<url>') // regex has url group
+                         && strstr($asset['regex'], '(?P<type>') // regex has type group
                          && preg_match('/type="(?P<type>.+?)"/', $asset['template'], $typematch)
                          ) {
-                            $asset['type'] = $typematch['type'];
+                            $asset['type']  = $typematch['type'];
                             $this->assets[] = $asset;
                         } else {
                             trigger_error('Atomic loader: Unexpected assets definition.', E_USER_WARNING);
