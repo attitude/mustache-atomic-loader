@@ -45,6 +45,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
     private $templates = array();
 
     private $enableFiltersPragma = true;
+    private $expandTranslationMarkup = true;
 
     /**
      * Mustache filesystem Loader constructor (Change: Added basename option).
@@ -117,6 +118,9 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                 case 'enableFiltersPragma':
                     $this->enableFiltersPragma = !! $options['enableFiltersPragma'];
                 break;
+                case 'expandTranslationMarkup':
+                    $this->expandTranslationMarkup = !! $options['expandTranslationMarkup'];
+                break;
                 default:
                 break;
             }
@@ -162,7 +166,12 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
 
         // Enable filters pragma as if it was explicitly defined in the template
         $template = $this->enableFiltersPragma ? "{{%FILTERS}}\n" : "";
+
         $template.= trim(file_get_contents($fileName))."\n";
+
+        if ($this->expandTranslationMarkup) {
+            $template = $this->expandTranslationMarkup($template);
+        }
 
         // Loop asset types to include (external .css or .js)
         foreach ($this->assets as &$asset) {
@@ -184,6 +193,59 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         }
 
         return $template;
+    }
+
+    /**
+      * Expands simplified translation markup to Mustache helper specifics
+      *
+      * Examples:
+      *
+      * General use: {{ 'Event' | translate }}
+      * Mustache:    {{#__}}Event{{/__}}
+      *
+      * Pluralize:   {{ people ? 'One person is attending' : '{} people are attending' | translate }}
+      * Mustache:    {{#_n}}{"var": "people", "one": "One person is attending", "other": "{} are attending"}{{/_n}}
+      *
+      */
+    private function expandTranslationMarkup($str)
+    {
+        return preg_replace_callback(
+            '/\{\{\{?\s*(.+)\s*\|\s*translate\s*\}?\}\}/m',
+            function($matches) {
+                $str = trim($matches[1]);
+
+                // Expect just one string
+                if ($str[0]==="'" || $str[0]==='"') {
+                    $quotechr = $str[0];
+
+                    if (! preg_match('/'.$quotechr.'[^'.$quotechr.']+'.$quotechr.'/', $str, $submatches)) {
+                        throw new \HTTPException(500, 'Parse error near `'.$str.'`');
+                    }
+
+                    return '{{#__}}'.trim($str, $quotechr).'{{/__}}';
+                }
+
+                // Expect ternary operator
+                if (! preg_match('/(\w+)\s*?\?\s*([\'"])(.+?)([\'"])\s*:\s*([\'"])(.+?)([\'"])/', $str, $submatches)) {
+                    throw new \HTTPException(500, 'Parse error near `'.$str.'`: expecting ternary operator.');
+                }
+
+                $quotechr = $submatches[2];
+
+                // Not the same quotes
+                if (strlen(trim($submatches[2].$submatches[4].$submatches[5].$submatches[7], $quotechr)) !== 0) {
+                    throw new \HTTPException(500, 'Parse error near `'.$str.'`: expecting `'.$quotechr.'` qotes.');
+                }
+
+                // Build language arguments
+                return '{{#_n}}'.json_encode(array(
+                    'var'   => $submatches[1],
+                    'one'   => str_replace('\\'.$quotechr, $quotechr, $submatches[3]),
+                    'other' => str_replace('\\'.$quotechr, $quotechr, $submatches[6])
+                )).'{{/_n}}';
+            },
+            $str
+        );
     }
 
     /**
