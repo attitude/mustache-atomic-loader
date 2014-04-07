@@ -147,20 +147,23 @@ class AtomicLoader_AssetsConcantenator
                     // Is local?
                     if (!strstr($match['url'], '://')) {
                         if ($match['file'] = realpath($this->publicDir.'/'.ltrim($match['url'], '/'))) {
-                            $asset_types[$match['type']]['files'][] = $match['file'];
-                            $asset_types[$match['type']]['tags'][]  = trim($match[0]);
+                            // Do not load more than one asset instance
+                            if (! in_array($match['file'], $asset_types[$match['type']]['files'])) {
+                                $asset_types[$match['type']]['files'][] = $match['file'];
+                                $asset_types[$match['type']]['tags'][]  = trim($match[0]);
 
-                            if (!isset($asset_types[$match['type']]['last_mod_time'])) {
-                                $asset_types[$match['type']]['last_mod_time'] = 0;
-                            }
+                                if (!isset($asset_types[$match['type']]['last_mod_time'])) {
+                                    $asset_types[$match['type']]['last_mod_time'] = 0;
+                                }
 
-                            if (!isset($asset_types[$match['type']]['ext'])) {
-                                $asset_types[$match['type']]['ext'] = substr(strrchr($asset['glob'],'.'),1);
-                            }
+                                if (!isset($asset_types[$match['type']]['ext'])) {
+                                    $asset_types[$match['type']]['ext'] = substr(strrchr($asset['glob'],'.'),1);
+                                }
 
-                            $filemtime = filemtime($match['file']);
-                            if ($asset_types[$match['type']]['last_mod_time'] < $filemtime) {
-                                $asset_types[$match['type']]['last_mod_time'] = $filemtime;
+                                $filemtime = filemtime($match['file']);
+                                if ($asset_types[$match['type']]['last_mod_time'] < $filemtime) {
+                                    $asset_types[$match['type']]['last_mod_time'] = $filemtime;
+                                }
                             }
                         } else {
                             // Store tag wich cannot be concantenated:
