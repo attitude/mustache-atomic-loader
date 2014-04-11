@@ -207,7 +207,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
       * Mustache:    {{#_n}}{"var": "people", "one": "One person is attending", "other": "{} are attending"}{{/_n}}
       *
       */
-    private function expandTranslationMarkup($str)
+    protected function expandTranslationMarkup($str)
     {
         return preg_replace_callback(
             '/\{\{\{?\s*(.+)\s*\|\s*translate\s*\}?\}\}/m',
