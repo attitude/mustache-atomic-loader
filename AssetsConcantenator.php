@@ -148,7 +148,7 @@ class AtomicLoader_AssetsConcantenator
                     if (!strstr($match['url'], '://')) {
                         if ($match['file'] = realpath($this->publicDir.'/'.ltrim($match['url'], '/'))) {
                             // Do not load more than one asset instance
-                            if (! in_array($match['file'], $asset_types[$match['type']]['files'])) {
+                            if (!isset($asset_types[$match['type']]) || !in_array($match['file'], $asset_types[$match['type']]['files'])) {
                                 $asset_types[$match['type']]['files'][] = $match['file'];
                                 $asset_types[$match['type']]['tags'][]  = trim($match[0]);
 
