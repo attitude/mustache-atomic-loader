@@ -221,6 +221,9 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                     return $original;
                 }
 
+                // Set the new match
+                $str = trim($matches[1]);
+
                 // Expect just one string
                 if ($str[0]==="'" || $str[0]==='"') {
                     $quotechr = $str[0];
