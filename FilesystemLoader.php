@@ -212,9 +212,14 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
     protected function expandTranslationMarkup($str)
     {
         return preg_replace_callback(
-            '/\{\{\{?\s*(.+)\s*\|\s*translate\s*\}?\}\}/m',
+            '/(\{\{\{?)(.+?)(\}?\}\})/m',
             function($matches) {
-                $str = trim($matches[1]);
+                $original = $matches[0];
+                $str = trim($matches[2]);
+
+                if (! preg_match('/(.+)\s*\|\s*translate/', $str, $matches)) {
+                    return $original;
+                }
 
                 // Expect just one string
                 if ($str[0]==="'" || $str[0]==='"') {
