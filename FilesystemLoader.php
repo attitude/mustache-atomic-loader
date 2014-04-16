@@ -3,6 +3,7 @@
 namespace attitude\Mustache;
 
 use \Mustache_Loader_FilesystemLoader;
+use \attitude\Elements\HTTPException;
 
 /*
  * This file is not part of Mustache.php
@@ -161,6 +162,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         $fileName = $this->getFileName($name);
 
         if (!file_exists($fileName)) {
+            trigger_error('Failed to load mustache: '.str_replace($this->baseDir, '', $fileName), E_USER_WARNING);
             throw new \Mustache_Exception_UnknownTemplateException($name);
         }
 
@@ -219,7 +221,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                     $quotechr = $str[0];
 
                     if (! preg_match('/'.$quotechr.'[^'.$quotechr.']+'.$quotechr.'/', $str, $submatches)) {
-                        throw new \HTTPException(500, 'Parse error near `'.$str.'`');
+                        throw new HTTPException(500, 'Parse error near `'.$str.'`');
                     }
 
                     return '{{#__}}'.trim($str, $quotechr).'{{/__}}';
@@ -227,14 +229,14 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
 
                 // Expect ternary operator
                 if (! preg_match('/(\w+)\s*?\?\s*([\'"])(.+?)([\'"])\s*:\s*([\'"])(.+?)([\'"])/', $str, $submatches)) {
-                    throw new \HTTPException(500, 'Parse error near `'.$str.'`: expecting ternary operator.');
+                    throw new HTTPException(500, 'Parse error near `'.$str.'`: expecting ternary operator.');
                 }
 
                 $quotechr = $submatches[2];
 
                 // Not the same quotes
                 if (strlen(trim($submatches[2].$submatches[4].$submatches[5].$submatches[7], $quotechr)) !== 0) {
-                    throw new \HTTPException(500, 'Parse error near `'.$str.'`: expecting `'.$quotechr.'` qotes.');
+                    throw new HTTPException(500, 'Parse error near `'.$str.'`: expecting `'.$quotechr.'` qotes.');
                 }
 
                 // Build language arguments
