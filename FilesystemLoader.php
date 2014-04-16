@@ -236,7 +236,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                 }
 
                 // Expect ternary operator
-                if (! preg_match('/(\w+)\s*?\?\s*([\'"])(.+?)([\'"])\s*:\s*([\'"])(.+?)([\'"])/', $str, $submatches)) {
+                if (! preg_match('/([\.\w]+)\s*?\?\s*([\'"])(.+?)([\'"])\s*:\s*([\'"])(.+?)([\'"])/', $str, $submatches)) {
                     throw new HTTPException(500, 'Parse error near `'.$str.'`: expecting ternary operator.');
                 }
 
