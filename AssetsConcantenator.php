@@ -120,8 +120,8 @@ class AtomicLoader_AssetsConcantenator
         foreach ($files as &$file) {
             if ($str = file_get_contents($file)) {
                 $cat.= trim($str)."\n";
-            } else {
-                throw new \Exception('Failed to read one of source files.');
+            } elseif ($str===false) {
+                throw new \Exception('Failed to read one of source files: '.$file);
             }
         }
 
@@ -197,7 +197,7 @@ class AtomicLoader_AssetsConcantenator
                         $results[$asset['type']][] = sprintf($asset['template'], $assets['url']);
                     } catch (\Exception $e) {
                         if (isset($assets['tags'])) {
-                            $results[$asset['type']] = array_merge($results[$asset['type']], $assets['tags']);
+                            $results[$asset['type']] = array_merge((array) $results[$asset['type']], $assets['tags']);
                         }
 
                         trigger_error($e->getMessage(), E_USER_WARNING);
