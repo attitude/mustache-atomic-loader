@@ -20,6 +20,8 @@ class AtomicLoader_AssetsConcantenator
     private $publicURL = '';
     private $publicStaticURL = '';
 
+    private $minify = true;
+
     public function __construct($baseDir, array $options = array())
     {
         $this->baseDir = $baseDir;
@@ -103,6 +105,9 @@ class AtomicLoader_AssetsConcantenator
                         }
                     }
                 break;
+                case 'minify':
+                    $this->minify = !! $options['minify'];
+                break;
                 default:
                 break;
             }
@@ -142,7 +147,7 @@ class AtomicLoader_AssetsConcantenator
                 $cat.= $file;
             } else {
                 if ($str = file_get_contents($file)) {
-                    $cat.= $this->trimEachLine($str)."\n";
+                    $cat.= $this->trimEachLine($str, $this->minify)."\n";
                 } elseif ($str===false) {
                     throw new \Exception('Failed to read one of source files: '.$file);
                 }
@@ -156,7 +161,7 @@ class AtomicLoader_AssetsConcantenator
         throw new \Exception('Failed to write combination file.');
     }
 
-    private function trimEachLine($str) {
+    private function trimEachLine($str, $minify = true) {
         $str     = explode("\n", $str);
         $new_str = array('');
         $new_str_line = 0;
@@ -166,6 +171,10 @@ class AtomicLoader_AssetsConcantenator
         foreach ($str as $i => &$line) {
             // Trim spaces
             $line = trim($line);
+
+            if (!$minify) {
+                continue;
+            }
 
             // Remove inline comments
             $pos = strpos($line, '//');
@@ -251,7 +260,7 @@ class AtomicLoader_AssetsConcantenator
                         }
                     } elseif (isset($match['content'])) {
                         // storeCombination relies on "\n" check, otherwise it considers it a path
-                        $match['content'] = $this->trimEachLine($match['content'])."\n";
+                        $match['content'] = $this->trimEachLine($match['content'], $this->minify)."\n";
 
                         // Do not load more than one asset instance
                         if (!isset($asset_types[$match['type']]) || !in_array($match['content'], $asset_types[$match['type']]['files'])) {
