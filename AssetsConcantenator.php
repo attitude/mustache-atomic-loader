@@ -20,6 +20,8 @@ class AtomicLoader_AssetsConcantenator
     private $publicURL = '';
     private $publicStaticURL = '';
 
+    private $minify = true;
+
     public function __construct($baseDir, array $options = array())
     {
         $this->baseDir = $baseDir;
@@ -103,6 +105,9 @@ class AtomicLoader_AssetsConcantenator
                         }
                     }
                 break;
+                case 'minify':
+                    $this->minify = !! $options['minify'];
+                break;
                 default:
                 break;
             }
@@ -139,10 +144,10 @@ class AtomicLoader_AssetsConcantenator
         foreach ($files as &$file) {
             // Already a content
             if (strstr($file, "\n")) {
-                $cat.= trim($file)."\n";
+                $cat.= $file;
             } else {
                 if ($str = file_get_contents($file)) {
-                    $cat.= trim($str)."\n";
+                    $cat.= $this->trimEachLine($str, $this->minify)."\n";
                 } elseif ($str===false) {
                     throw new \Exception('Failed to read one of source files: '.$file);
                 }
@@ -154,6 +159,60 @@ class AtomicLoader_AssetsConcantenator
         }
 
         throw new \Exception('Failed to write combination file.');
+    }
+
+    private function trimEachLine($str, $minify = true) {
+        $str     = explode("\n", $str);
+        $new_str = array('');
+        $new_str_line = 0;
+        $new_str_length = 0;
+        $max_line_length = 32768;
+
+        foreach ($str as $i => &$line) {
+            // Trim spaces
+            $line = trim($line);
+
+            if (!$minify) {
+                continue;
+            }
+
+            // Remove inline comments
+            $pos = strpos($line, '//');
+
+            if ($pos===0) {
+                $line = '';
+            } elseif (
+                $pos > 0
+             && $line[($pos-1)]!=='\\' // Is not escaped
+             && $line[($pos-1)]!==':' // Is not ://
+            ) {
+                $line = trim(substr($line, 0, $pos));
+            }
+
+            // If there's nothing left
+            if ($line==='') {
+                continue;
+            }
+
+            if (substr($line, -2)==='*/') {
+                $line.="\n";
+            }
+
+            // Calculate line length
+            $this_str_len    = strlen($line);
+            $new_str_length += $this_str_len;
+
+            if ($new_str_length + 1 /* the new line */ > $max_line_length) {
+                // New line + reset
+                $new_str_line++;
+                $new_str_length = $this_str_len;
+                $new_str[$new_str_line] = '';
+            }
+
+            $new_str[$new_str_line].= $line;
+        }
+
+        return implode("\n", $new_str);
     }
 
     public function defaultConcantenateAssets($html)
@@ -201,7 +260,7 @@ class AtomicLoader_AssetsConcantenator
                         }
                     } elseif (isset($match['content'])) {
                         // storeCombination relies on "\n" check, otherwise it considers it a path
-                        $match['content'] = trim($match['content'])."\n";
+                        $match['content'] = $this->trimEachLine($match['content'], $this->minify)."\n";
 
                         // Do not load more than one asset instance
                         if (!isset($asset_types[$match['type']]) || !in_array($match['content'], $asset_types[$match['type']]['files'])) {
