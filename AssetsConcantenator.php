@@ -74,28 +74,32 @@ class AtomicLoader_AssetsConcantenator
                          && preg_match('/type="(?P<type>.+?)"/', $asset['template'], $typematch)
                             // Regex is required...
                          && isset($asset['regex']) // regex to match assets in HTML code
-                            // ...and must be a string (just to be sure)
-                         && is_string($asset['regex'])
-                         && (
-                            // Regex for linked assets:
-                                (
-                                    strstr($asset['regex'], '(?P<url>') // regex has url group
-                                 && strstr($asset['regex'], '(?P<type>') // regex has type group
-                                 && isset($asset['glob'])
-                                 && is_string($asset['glob'])
-                                )
-                             || // or inline assets
-                                (
-                                    isset($asset['ext'])
-                                 && strstr($asset['regex'], '(?P<type>') // regex has type group
-                                 && strstr($asset['regex'], '(?P<content>') // regex has content group
-                                )
-                            )
+                         && (isset($asset['glob']) && is_string($asset['glob']) || (isset($asset['ext']) && is_string($asset['ext'])))
                         ) {
-                            $asset['type']  = $typematch['type'];
-                            $this->assets[] = $asset;
+                            foreach ((array) $asset['regex'] as $regex) {
+                                if (
+                                    // ...and must be a string (just to be sure)
+                                    is_string($regex)
+                                 && strstr($regex, '(?P<type>') // regex has type group
+                                 && (
+                                    // Regex for linked assets:
+                                    strstr($regex, '(?P<url>') // regex has url group
+                                    ||
+                                    // or inline assets
+                                    strstr($regex, '(?P<content>') // regex has content group
+                                    )
+                                ) {
+                                    $_asset = $asset;
+                                    $_asset['type']  = $typematch['type'];
+                                    $_asset['regex'] = $regex;
+
+                                    $this->assets[] = $_asset;
+                                } else {
+                                    trigger_error('Atomic loader: Unexpected assets definition (#1).', E_USER_WARNING);
+                                }
+                            }
                         } else {
-                            trigger_error('Atomic loader: Unexpected assets definition.', E_USER_WARNING);
+                            trigger_error('Atomic loader: Unexpected assets definition (#2).', E_USER_WARNING);
                         }
                     }
                 break;
@@ -179,7 +183,7 @@ class AtomicLoader_AssetsConcantenator
                                     }
 
                                     if (!isset($asset_types[$match['type']]['ext'])) {
-                                        $asset_types[$match['type']]['ext'] = substr(strrchr($asset['glob'],'.'),1);
+                                        $asset_types[$match['type']]['ext'] = isset($asset['ext']) ? $asset['ext'] : substr(strrchr($asset['glob'],'.'),1);
                                     }
 
                                     $filemtime = filemtime($match['file']);
@@ -206,7 +210,7 @@ class AtomicLoader_AssetsConcantenator
                             $asset_types[$match['type']]['tags'][]  = trim($match[0]);
 
                             if (!isset($asset_types[$match['type']]['ext'])) {
-                                $asset_types[$match['type']]['ext'] = $asset['ext'];
+                                $asset_types[$match['type']]['ext'] = isset($asset['ext']) ? $asset['ext'] : substr(strrchr($asset['glob'],'.'),1);
                             }
                         }
                     }
@@ -215,6 +219,8 @@ class AtomicLoader_AssetsConcantenator
                 }
             }
         }
+
+        print_r($asset_types);
 
         // Concantenate
         foreach ($this->assets as &$asset) {

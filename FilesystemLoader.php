@@ -138,22 +138,18 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
             array(
                 'glob'     => '*.css',
                 'template' => '<link concantenate href="%s" media="all" rel="stylesheet" type="text/css" />',
-                'regex'    => '/ +?<[^>]+?concantenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?\/>\n?/'
+                'regex'    => array (
+                    '/ +?<[^>]+?concantenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?\/>\n?/',
+                    '/ +?<style[^>]*?concantenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/style>\n?/s'
+                )
             ),
             array(
                 'glob'     => '*.js',
                 'template' => '<script concantenate src="%s" type="text/javascript"></script>',
-                'regex'    => '/ +?<[^>]+?concantenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?><\/script>\n?/'
-            ),
-            array(
-                'ext'      => 'js',
-                'template' => '<script concantenate src="%s" type="text/javascript"></script>',
-                'regex'    => '/ +?<script[^>]*?concantenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/script>\n?/s'
-            ),
-            array(
-                'ext'      => 'css',
-                'template' => '<link concantenate href="%s" media="all" rel="stylesheet" type="text/css" />',
-                'regex'    => '/ +?<style[^>]*?concantenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/style>\n?/s'
+                'regex'    => array (
+                    '/ +?<[^>]+?concantenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?><\/script>\n?/',
+                    '/ +?<script[^>]*?concantenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/script>\n?/s'
+                )
             )
         );
     }
