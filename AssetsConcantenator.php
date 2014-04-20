@@ -163,7 +163,6 @@ class AtomicLoader_AssetsConcantenator
 
         // Group matches
         foreach ($this->assets as &$asset) {
-            print_r($asset);
             if (preg_match_all($asset['regex'], $html, $matches, PREG_SET_ORDER)) {
                 foreach ($matches as &$match) {
                     if (isset($match['url'])) {
@@ -219,8 +218,6 @@ class AtomicLoader_AssetsConcantenator
                 }
             }
         }
-
-        print_r($asset_types);
 
         // Concantenate
         foreach ($this->assets as &$asset) {
