@@ -104,7 +104,7 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                          ) {
                             $asset['type'] = $typematch['type'];
                             $this->assets[] = $asset;
-                        } else {
+                        } elseif (!isset($asset['ext'])) {
                             trigger_error('Atomic loader: Unexpected assets definition.', E_USER_WARNING);
                         }
                     }
@@ -137,13 +137,23 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         return array(
             array(
                 'glob'     => '*.css',
-                'template' => '<link data-concantenate="true" href="%s" media="all" rel="stylesheet" type="text/css" />',
-                'regex'    => '/ +?<.+?data-concantenate="true".*(?:href|src)="(?P<url>.+?)?".*?type="(?P<type>.+?)".*?\/>\n?/'
+                'template' => '<link concantenate href="%s" media="all" rel="stylesheet" type="text/css" />',
+                'regex'    => '/ +?<[^>]+?concantenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?\/>\n?/'
             ),
             array(
                 'glob'     => '*.js',
-                'template' => '<script data-concantenate="true" src="%s" type="text/javascript"></script>',
-                'regex'    => '/ +?<.+?data-concantenate="true".*(?:href|src)="(?P<url>.+?)?".*?type="(?P<type>.+?)".*?<\/script>\n?/'
+                'template' => '<script concantenate src="%s" type="text/javascript"></script>',
+                'regex'    => '/ +?<[^>]+?concantenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?><\/script>\n?/'
+            ),
+            array(
+                'ext'      => 'js',
+                'template' => '<script concantenate src="%s" type="text/javascript"></script>',
+                'regex'    => '/ +?<script[^>]*?concantenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/script>\n?/s'
+            ),
+            array(
+                'ext'      => 'css',
+                'template' => '<link concantenate href="%s" media="all" rel="stylesheet" type="text/css" />',
+                'regex'    => '/ +?<style[^>]*?concantenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/style>\n?/s'
             )
         );
     }
