@@ -69,20 +69,37 @@ class AtomicLoader_AssetsConcantenator
 
                     foreach ($options['assets'] as &$asset) {
                         // Check integrity
-                        if (isset($asset['glob'])
-                         && is_string($asset['glob'])
-                         && isset($asset['template'])
+                        if (isset($asset['template'])
                          && is_string($asset['template'])
-                         && isset($asset['regex']) // regex to match assets in HTML code
-                         && is_string($asset['regex'])
-                         && strstr($asset['regex'], '(?P<url>') // regex has url group
-                         && strstr($asset['regex'], '(?P<type>') // regex has type group
                          && preg_match('/type="(?P<type>.+?)"/', $asset['template'], $typematch)
-                         ) {
-                            $asset['type']  = $typematch['type'];
-                            $this->assets[] = $asset;
+                            // Regex is required...
+                         && isset($asset['regex']) // regex to match assets in HTML code
+                         && (isset($asset['glob']) && is_string($asset['glob']) || (isset($asset['ext']) && is_string($asset['ext'])))
+                        ) {
+                            foreach ((array) $asset['regex'] as $regex) {
+                                if (
+                                    // ...and must be a string (just to be sure)
+                                    is_string($regex)
+                                 && strstr($regex, '(?P<type>') // regex has type group
+                                 && (
+                                    // Regex for linked assets:
+                                    strstr($regex, '(?P<url>') // regex has url group
+                                    ||
+                                    // or inline assets
+                                    strstr($regex, '(?P<content>') // regex has content group
+                                    )
+                                ) {
+                                    $_asset = $asset;
+                                    $_asset['type']  = $typematch['type'];
+                                    $_asset['regex'] = $regex;
+
+                                    $this->assets[] = $_asset;
+                                } else {
+                                    trigger_error('Atomic loader: Unexpected assets definition (#1).', E_USER_WARNING);
+                                }
+                            }
                         } else {
-                            trigger_error('Atomic loader: Unexpected assets definition.', E_USER_WARNING);
+                            trigger_error('Atomic loader: Unexpected assets definition (#2).', E_USER_WARNING);
                         }
                     }
                 break;
@@ -101,7 +118,11 @@ class AtomicLoader_AssetsConcantenator
     }
 
     private function hash($str) {
-        return strtr(base64_encode(hash('sha256', $str, true)), array('+' => '-', '/' => '_', '=' => ''));
+        return strtr(base64_encode($this->hashStr($str)), array('+' => '-', '/' => '_', '=' => ''));
+    }
+
+    private function hashStr($str, $as_hex = false) {
+        return $as_hex ? hash('sha256', $str) : hash('sha256', $str, true);
     }
 
     private function storeCombination($path, array $files)
@@ -109,8 +130,6 @@ class AtomicLoader_AssetsConcantenator
         $basedir = dirname($path);
 
         if (!file_exists($basedir)) {
-            var_dump($basedir);
-
             if (! mkdir($basedir, 0777, true)) {
                 throw new \Exception('Failed to create base dir for combination file.');
             }
@@ -118,10 +137,15 @@ class AtomicLoader_AssetsConcantenator
 
         $cat = '';
         foreach ($files as &$file) {
-            if ($str = file_get_contents($file)) {
-                $cat.= trim($str)."\n";
-            } elseif ($str===false) {
-                throw new \Exception('Failed to read one of source files: '.$file);
+            // Already a content
+            if (strstr($file, "\n")) {
+                $cat.= trim($file)."\n";
+            } else {
+                if ($str = file_get_contents($file)) {
+                    $cat.= trim($str)."\n";
+                } elseif ($str===false) {
+                    throw new \Exception('Failed to read one of source files: '.$file);
+                }
             }
         }
 
@@ -139,40 +163,56 @@ class AtomicLoader_AssetsConcantenator
 
         // Group matches
         foreach ($this->assets as &$asset) {
+            print_r($asset);
             if (preg_match_all($asset['regex'], $html, $matches, PREG_SET_ORDER)) {
                 foreach ($matches as &$match) {
-                    // Remove current site's public http base
-                    $match['url'] = str_replace($this->publicURL, '', $match['url']);
+                    if (isset($match['url'])) {
+                        // Remove current site's public http base
+                        $match['url'] = str_replace($this->publicURL, '', $match['url']);
 
-                    // Is local?
-                    if (!strstr($match['url'], '://')) {
-                        if ($match['file'] = realpath($this->publicDir.'/'.ltrim($match['url'], '/'))) {
-                            // Do not load more than one asset instance
-                            if (!isset($asset_types[$match['type']]) || !in_array($match['file'], $asset_types[$match['type']]['files'])) {
-                                $asset_types[$match['type']]['files'][] = $match['file'];
-                                $asset_types[$match['type']]['tags'][]  = trim($match[0]);
+                        // Is local?
+                        if (!strstr($match['url'], '://')) {
+                            if ($match['file'] = realpath($this->publicDir.'/'.ltrim($match['url'], '/'))) {
+                                // Do not load more than one asset instance
+                                if (!isset($asset_types[$match['type']]) || !in_array($match['file'], $asset_types[$match['type']]['files'])) {
+                                    $asset_types[$match['type']]['files'][] = $match['file'];
+                                    $asset_types[$match['type']]['tags'][]  = trim($match[0]);
 
-                                if (!isset($asset_types[$match['type']]['last_mod_time'])) {
-                                    $asset_types[$match['type']]['last_mod_time'] = 0;
+                                    if (!isset($asset_types[$match['type']]['last_mod_time'])) {
+                                        $asset_types[$match['type']]['last_mod_time'] = 0;
+                                    }
+
+                                    if (!isset($asset_types[$match['type']]['ext'])) {
+                                        $asset_types[$match['type']]['ext'] = isset($asset['ext']) ? $asset['ext'] : substr(strrchr($asset['glob'],'.'),1);
+                                    }
+
+                                    $filemtime = filemtime($match['file']);
+                                    if ($asset_types[$match['type']]['last_mod_time'] < $filemtime) {
+                                        $asset_types[$match['type']]['last_mod_time'] = $filemtime;
+                                    }
                                 }
-
-                                if (!isset($asset_types[$match['type']]['ext'])) {
-                                    $asset_types[$match['type']]['ext'] = substr(strrchr($asset['glob'],'.'),1);
-                                }
-
-                                $filemtime = filemtime($match['file']);
-                                if ($asset_types[$match['type']]['last_mod_time'] < $filemtime) {
-                                    $asset_types[$match['type']]['last_mod_time'] = $filemtime;
-                                }
+                            } else {
+                                // Store tag wich cannot be concantenated:
+                                $results[$match['type']] = $match[0];
                             }
                         } else {
+                            // @TODO: Fetch remotes
                             // Store tag wich cannot be concantenated:
                             $results[$match['type']] = $match[0];
                         }
-                    } else {
-                        // @TODO: Fetch remotes
-                        // Store tag wich cannot be concantenated:
-                        $results[$match['type']] = $match[0];
+                    } elseif (isset($match['content'])) {
+                        // storeCombination relies on "\n" check, otherwise it considers it a path
+                        $match['content'] = trim($match['content'])."\n";
+
+                        // Do not load more than one asset instance
+                        if (!isset($asset_types[$match['type']]) || !in_array($match['content'], $asset_types[$match['type']]['files'])) {
+                            $asset_types[$match['type']]['files'][] = $match['content'];
+                            $asset_types[$match['type']]['tags'][]  = trim($match[0]);
+
+                            if (!isset($asset_types[$match['type']]['ext'])) {
+                                $asset_types[$match['type']]['ext'] = isset($asset['ext']) ? $asset['ext'] : substr(strrchr($asset['glob'],'.'),1);
+                            }
+                        }
                     }
 
                     $html = str_replace($match[0], '', $html);
@@ -180,14 +220,21 @@ class AtomicLoader_AssetsConcantenator
             }
         }
 
+        print_r($asset_types);
+
         // Concantenate
         foreach ($this->assets as &$asset) {
             $assets = &$asset_types[$asset['type']];
 
             if ($this->active && isset($assets['files'])) {
-                $assets['hash'] = $this->hash(implode("::", $assets['files']));
+                if (isset($assets['is_processed'])) {
+                    continue;
+                }
 
-                $assets['file'] = '/'.$assets['ext'].'/'.$assets['hash'].'.'.$assets['last_mod_time'].'.'.$assets['ext'];
+                $assets['is_processed'] = true;
+                $assets['hash'] = $this->hash(implode("::", $assets['files']) .'::'.$assets['last_mod_time'] );
+
+                $assets['file'] = '/'.$assets['ext'].'/'.$assets['hash'].'.'.$assets['ext'];
                 $assets['path'] = $this->publicStaticDir.$assets['file'];
                 $assets['url']  = $this->publicStaticURL.$assets['file'];
 
