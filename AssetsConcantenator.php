@@ -294,7 +294,7 @@ class AtomicLoader_AssetsConcantenator
                 $assets['path'] = $this->publicStaticDir.$assets['file'];
                 $assets['url']  = $this->publicStaticURL.$assets['file'];
 
-                if (!file_exists($assets['file'])) {
+                if (!file_exists($assets['path'])) {
                     try {
                         $this->storeCombination($assets['path'], $assets['files']);
                         $results[$asset['type']][] = sprintf($asset['template'], $assets['url']);
@@ -305,6 +305,8 @@ class AtomicLoader_AssetsConcantenator
 
                         trigger_error($e->getMessage(), E_USER_WARNING);
                     }
+                } else { // Already cached
+                    $results[$asset['type']][] = sprintf($asset['template'], $assets['url']);
                 }
             } elseif (isset($assets['tags'])) {
                 if (! isset($results[$asset['type']])) {
