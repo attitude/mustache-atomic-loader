@@ -70,13 +70,14 @@ Loading each tiny bit of styles would be crazy on production. Therefore you can
 use asset concatenation which is combining assets in one file, caching it in any
 publicly accessible folder you specify.
 
+Example Concantenation class is included. You might consider extending it and
+and by defining custom `defaultConcantenateAssets()` method overwrite the
+behaviour. Since v0.3.0 this class is able to concatenate linked as well as
+inline assets into one file.
+
 > **Heads up:** It is important to note, that this Concatenation class combines
 > only assets defined in the current page source. This might be awkward, but
 > it enables to load only styles necessary to render the current page.
-
-Example Concatenation class is included. You might consider extending it and
-and by defining custom `defaultConcantenateAssets()` method overwrite the
-behaviour.
 
 Example Usage
 -------------
