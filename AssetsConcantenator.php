@@ -204,6 +204,20 @@ class AtomicLoader_AssetsConcantenator
             ) {
                 $open = $new_str_len;
                 $type = 'inlinecomment';
+
+                // Possibility of false match of `background: url(//somedomain.com/img.gif);
+                if ($str[$i-1]==='(') {
+                    $next_newline_pos     = strpos($str, "\n", $i);
+                    $next_parenthesis_pos = strpos($str, ')', $i);
+
+                    // EOF ?
+                    $next_newline_pos = $next_newline_pos===false ? $str_len : $next_newline_pos;
+
+                    // There is a closing parenthesis on the same line
+                    if ($next_parenthesis_pos && $next_newline_pos > $next_parenthesis_pos) {
+                        $open = false;
+                    }
+                }
             }
 
             // Close line comment on the end of the line
