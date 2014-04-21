@@ -164,7 +164,7 @@ class AtomicLoader_AssetsConcantenator
     private function trimEachLine($str, $minify = true)
     {
         if (!$minify) {
-            $str = explode("\n", $this->removeBlockComments($str));
+            $str = explode("\n", $str);
             foreach ($str as $i => &$line) {
                 // Trim spaces
                 $line = trim($line);
