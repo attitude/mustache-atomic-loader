@@ -79,6 +79,21 @@ inline assets into one file.
 > only assets defined in the current page source. This might be awkward, but
 > it enables to load only styles necessary to render the current page.
 
+Minification
+------------
+
+Combining assets is important site speed optimisation, but it can be pushed more
+by source minification. So far, CSS and JS is supported but should work with
+most of the languages with similar language structs.
+
+Minification is performed always, although it can be constrained to trimming
+unnecessary space from line beginnings and ends by passing option
+`'minify' => false` in construct arguments.
+
+Otherwise heavy minification is performed. Anything within double/single quoted
+strings is considered protected. Non minification, however, is more 'dumb' than
+the heavy version and does not respect indentation within quoted strings.
+
 Example Usage
 -------------
 
