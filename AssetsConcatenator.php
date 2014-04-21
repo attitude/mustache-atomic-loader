@@ -2,7 +2,7 @@
 
 namespace attitude\Mustache;
 
-class AtomicLoader_AssetsConcantenator
+class AtomicLoader_AssetsConcatenator
 {
     public  $active  = true;
 
@@ -301,7 +301,7 @@ class AtomicLoader_AssetsConcantenator
         return $new_str;
     }
 
-    public function defaultConcantenateAssets($html)
+    public function defaultConcatenateAssets($html)
     {
         $asset_types  = array();
         $results      = array();
@@ -336,12 +336,12 @@ class AtomicLoader_AssetsConcantenator
                                     }
                                 }
                             } else {
-                                // Store tag wich cannot be concantenated:
+                                // Store tag wich cannot be concatenated:
                                 $results[$match['type']] = $match[0];
                             }
                         } else {
                             // @TODO: Fetch remotes
-                            // Store tag wich cannot be concantenated:
+                            // Store tag wich cannot be concatenated:
                             $results[$match['type']] = $match[0];
                         }
                     } elseif (isset($match['content'])) {
@@ -364,7 +364,7 @@ class AtomicLoader_AssetsConcantenator
             }
         }
 
-        // Concantenate
+        // Concatenate
         foreach ($this->assets as &$asset) {
             $assets = &$asset_types[$asset['type']];
 
@@ -404,8 +404,8 @@ class AtomicLoader_AssetsConcantenator
         }
 
         foreach ($results as $type => &$tags) {
-            if (strstr($html, '<!--concantenated-assets:'.$type.'-->')) {
-                $html = str_replace('<!--concantenated-assets:'.$type.'-->', implode("\n", $tags), $html);
+            if (strstr($html, '<!--concatenated-assets:'.$type.'-->')) {
+                $html = str_replace('<!--concatenated-assets:'.$type.'-->', implode("\n", $tags), $html);
             } elseif ($type==='css' && strstr($html, '</head>')) {
                 $html = str_replace('</head>', implode("\n", $tags).'</head>', $html);
             } elseif ($type==='css' && strstr($html, '</body>')) {
