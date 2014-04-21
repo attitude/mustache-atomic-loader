@@ -161,58 +161,130 @@ class AtomicLoader_AssetsConcantenator
         throw new \Exception('Failed to write combination file.');
     }
 
-    private function trimEachLine($str, $minify = true) {
-        $str     = explode("\n", $str);
-        $new_str = array('');
-        $new_str_line = 0;
-        $new_str_length = 0;
-        $max_line_length = 32768;
-
-        foreach ($str as $i => &$line) {
-            // Trim spaces
-            $line = trim($line);
-
-            if (!$minify) {
-                continue;
+    private function trimEachLine($str, $minify = true)
+    {
+        if (!$minify) {
+            $str = explode("\n", $this->removeBlockComments($str));
+            foreach ($str as $i => &$line) {
+                // Trim spaces
+                $line = trim($line);
             }
 
-            // Remove inline comments
-            $pos = strpos($line, '//');
-
-            if ($pos===0) {
-                $line = '';
-            } elseif (
-                $pos > 0
-             && $line[($pos-1)]!=='\\' // Is not escaped
-             && $line[($pos-1)]!==':' // Is not ://
-            ) {
-                $line = trim(substr($line, 0, $pos));
-            }
-
-            // If there's nothing left
-            if ($line==='') {
-                continue;
-            }
-
-            if (substr($line, -2)==='*/') {
-                $line.="\n";
-            }
-
-            // Calculate line length
-            $this_str_len    = strlen($line);
-            $new_str_length += $this_str_len;
-
-            if ($new_str_length + 1 /* the new line */ > $max_line_length) {
-                // New line + reset
-                $new_str_line++;
-                $new_str_length = $this_str_len;
-                $new_str[$new_str_line] = '';
-            }
-
-            $new_str[$new_str_line].= $line;
+            return implode("\n", $str);
         }
 
-        return implode("\n", $new_str);
+        // Minification
+        $new_str     = '';
+        $open        = false;
+        $type        = null;
+        $new_str_len = 0;
+        $last_ch     = "\n";
+
+        $str_len = strlen($str);
+        for ($i=0; $i<$str_len; $i++) {
+            // Open block comment, but keep /*! comments
+            if ($open===false && $str[$i]==='/' && $str[($i+1)]==='*' && $str[($i+2)]!=='!') {
+                $open = $new_str_len;
+                $type = 'blockcomment';
+            }
+
+            // Close block comment
+            if ($open!==false && $type==='blockcomment' && $str[$i]==='*' && $str[($i+1)]==='/') {
+                $open = false;
+                $i++; // Jump after comment
+                continue;
+            }
+
+            // Open line comment
+            if ($open===false && $str[$i]==='/' && $str[($i+1)]==='/'
+             && (
+                 $i===0
+                 ||
+                 ($i>0 && $str[($i-1)]!==':' && $str[($i-1)]!=='\\'))
+            ) {
+                $open = $new_str_len;
+                $type = 'inlinecomment';
+            }
+
+            // Close line comment on the end of the line
+            if ($open!==false && $type==='inlinecomment' && $str[$i]==="\n") {
+                $open = false;
+                continue;
+            }
+
+            // Skip ' ' before ':;,{}()<>='
+            if ($open===false && $str[$i]===' '
+             && (
+                    $str[($i+1)]===' ' // Skip multiple ' ' (space characters)
+                 || $str[($i+1)]===':'
+                 || $str[($i+1)]===';'
+                 || $str[($i+1)]===','
+                 || $str[($i+1)]==='('
+                 || $str[($i+1)]===')'
+                 || $str[($i+1)]==='}'
+                 || $str[($i+1)]==='{'
+                 || $str[($i+1)]==='>'
+                 || $str[($i+1)]==='<'
+                 || $str[($i+1)]==='='
+                )
+            ) {
+                continue;
+            }
+
+            // Skip ' ' after ':;,{}()<>='
+            if ($open===false && $str[$i]===' '
+             && (   $last_ch==="\n"
+                 || $last_ch===':'
+                 || $last_ch===';'
+                 || $last_ch===','
+                 || $last_ch==='{'
+                 || $last_ch==='}'
+                 || $last_ch==='('
+                 || $last_ch===')'
+                 || $last_ch==='>'
+                 || $last_ch==='<'
+                 || $last_ch==='='
+                )
+            ) {
+                continue;
+            }
+
+            // Remove new lines
+            if ($open===false && $str[$i]==="\n") {
+                if ($new_str_len < 32000) { // max 32768 still has 768 left
+                    continue;
+                } else {
+                    $new_str_len = -1; // Will be set to 0 right away
+                }
+            }
+
+            // Inside of a string...
+            if ($open===false && $str[$i]==="\"") {
+                $open = $new_str_len;
+                $type = 'doublequotes';
+            }
+            if ($open!==false && $new_str_len > $open && $type==='doublequotes' && $str[$i]==="\"" && $str[($i-1)]!=="\\") {
+                $open = false;
+            }
+
+            // Inside of a string...
+            if ($open===false && $str[$i]==='\'') {
+                $open = $new_str_len;
+                $type = 'singlequotes';
+            }
+            if ($open!==false && $new_str_len > $open && $type==='singlequotes' && $str[$i]==='\'' && $str[($i-1)]!=="\\") {
+                $open = false;
+            }
+
+            // Write only when closed
+            if ($open===false || $open!==false && ($type==='doublequotes' || $type==='singlequotes')) {
+                $new_str.= $str[$i];
+                $last_ch = $str[$i];
+                $new_str_len++;
+            }
+        }
+
+        return $new_str;
     }
 
     public function defaultConcantenateAssets($html)
