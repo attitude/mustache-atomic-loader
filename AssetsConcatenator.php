@@ -2,7 +2,7 @@
 
 namespace attitude\Mustache;
 
-class AtomicLoader_AssetsConcantenator
+class AtomicLoader_AssetsConcatenator
 {
     public  $active  = true;
 
@@ -164,7 +164,7 @@ class AtomicLoader_AssetsConcantenator
     private function trimEachLine($str, $minify = true)
     {
         if (!$minify) {
-            $str = explode("\n", $this->removeBlockComments($str));
+            $str = explode("\n", $str);
             foreach ($str as $i => &$line) {
                 // Trim spaces
                 $line = trim($line);
@@ -204,6 +204,20 @@ class AtomicLoader_AssetsConcantenator
             ) {
                 $open = $new_str_len;
                 $type = 'inlinecomment';
+
+                // Possibility of false match of `background: url(//somedomain.com/img.gif);
+                if ($str[$i-1]==='(') {
+                    $next_newline_pos     = strpos($str, "\n", $i);
+                    $next_parenthesis_pos = strpos($str, ')', $i);
+
+                    // EOF ?
+                    $next_newline_pos = $next_newline_pos===false ? $str_len : $next_newline_pos;
+
+                    // There is a closing parenthesis on the same line
+                    if ($next_parenthesis_pos && $next_newline_pos > $next_parenthesis_pos) {
+                        $open = false;
+                    }
+                }
             }
 
             // Close line comment on the end of the line
@@ -287,7 +301,7 @@ class AtomicLoader_AssetsConcantenator
         return $new_str;
     }
 
-    public function defaultConcantenateAssets($html)
+    public function defaultConcatenateAssets($html)
     {
         $asset_types  = array();
         $results      = array();
@@ -322,12 +336,12 @@ class AtomicLoader_AssetsConcantenator
                                     }
                                 }
                             } else {
-                                // Store tag wich cannot be concantenated:
+                                // Store tag wich cannot be concatenated:
                                 $results[$match['type']] = $match[0];
                             }
                         } else {
                             // @TODO: Fetch remotes
-                            // Store tag wich cannot be concantenated:
+                            // Store tag wich cannot be concatenated:
                             $results[$match['type']] = $match[0];
                         }
                     } elseif (isset($match['content'])) {
@@ -350,7 +364,7 @@ class AtomicLoader_AssetsConcantenator
             }
         }
 
-        // Concantenate
+        // Concatenate
         foreach ($this->assets as &$asset) {
             $assets = &$asset_types[$asset['type']];
 
@@ -390,8 +404,8 @@ class AtomicLoader_AssetsConcantenator
         }
 
         foreach ($results as $type => &$tags) {
-            if (strstr($html, '<!--concantenated-assets:'.$type.'-->')) {
-                $html = str_replace('<!--concantenated-assets:'.$type.'-->', implode("\n", $tags), $html);
+            if (strstr($html, '<!--concatenated-assets:'.$type.'-->')) {
+                $html = str_replace('<!--concatenated-assets:'.$type.'-->', implode("\n", $tags), $html);
             } elseif ($type==='css' && strstr($html, '</head>')) {
                 $html = str_replace('</head>', implode("\n", $tags).'</head>', $html);
             } elseif ($type==='css' && strstr($html, '</body>')) {

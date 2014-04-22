@@ -70,8 +70,8 @@ Loading each tiny bit of styles would be crazy on production. Therefore you can
 use asset concatenation which is combining assets in one file, caching it in any
 publicly accessible folder you specify.
 
-Example Concantenation class is included. You might consider extending it and
-and by defining custom `defaultConcantenateAssets()` method overwrite the
+Example Concatenation class is included. You might consider extending it and
+and by defining custom `defaultConcatenateAssets()` method overwrite the
 behaviour. Since v0.3.0 this class is able to concatenate linked as well as
 inline assets into one file.
 
@@ -122,10 +122,10 @@ try {
         'assets' => AtomicLoader_FilesystemLoader::getAssetDefaults()
     );
 
-    $concantenator = new AtomicLoader_AssetsConcantenator(WWW_ROOT_DIR, $concatenation_args);
-    $concantenator->active = isset($_GET['concantenate']) && $_GET['concantenate']==='false' ? false : true;
+    $concatenator = new AtomicLoader_AssetsConcatenator(WWW_ROOT_DIR, $concatenation_args);
+    $concatenator->active = isset($_GET['concatenate']) && $_GET['concatenate']==='false' ? false : true;
 
-    $html = $concantenator->defaultConcantenateAssets($html);
+    $html = $concatenator->defaultConcatenateAssets($html);
 
     echo $html;
 } catch (HTTPException $e) {
