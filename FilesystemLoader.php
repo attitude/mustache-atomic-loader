@@ -267,16 +267,25 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
     /**
      * Helper function for getting a Mustache template file name.
      *
+     * Forces partials/templates structure up to 1 level deep
+     * for improved maintanance.
+     *
      * @param string $name
      *
      * @return string Template file name
      */
     protected function getFileName($name)
     {
-        $name = str_replace('-', '/', trim($name, '/'));
-        $fileName = $this->baseDir . '/' . $name;
+        // Exploder words
+        $name = explode('-', str_replace('/', '-', trim($name, '/')));
+        // Take first word as group of partials
+        $partials_group = array_shift($name);
 
+        // Build the filename back
+        $fileName = $this->baseDir . '/' . $partials_group. '/' . implode('-', $name);
 
+        // This loader assumes each template is a directory with
+        // a `template.mustache` filename (can be customized).
         if (substr($fileName, 0 - strlen($this->extension)) !== $this->extension) {
             $fileName .= '/'.$this->basename.$this->extension;
         } else {

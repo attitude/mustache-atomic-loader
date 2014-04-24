@@ -3,7 +3,7 @@ Mustache Atomic Loader
 
 *A work in progress*
 
-Mustache Atomic Loader is a implementation of mustache template loader with
+Mustache Atomic Loader is a implementation of Mustache template loader with
 few advanced markup options. By filtering template content before passing to
 Mustache it is possible to effectively extend Mustache language with custom
 markup.
@@ -37,28 +37,30 @@ Atomic Design
 
 Custom `getFileName()` method changes way to locate template files. Each partial
 (or template) has its own directory. The partial directory might look like this
-and can contain othe assets:
+and can contain other assets:
 
 ```
 + <abs partials path>/
-  + elements/
-    + page/
-      + header/                # atom
-        - template.mustache    # element's html/mustache template
-        - styles.css           # element's styles (asset)
-        - scripts.js           # element's behaviour (asset)
+  + elements/                # a group with common purpose
+    + page-header/           # element
+      - template.mustache    # element's html/mustache template
+      - styles.css           # element's styles (asset)
+      - scripts.js           # element's behaviour (asset)
   + sections/
   + ...
 ```
 
-
 ```
-{{ > elements-page-head }}
-<!-- resolves to: <abs partials path>/elements/page/head/template.mustache -->
+{{> elements/page-head }}
+<!-- resolves to: <abs partials path>/elements/page-head/template.mustache -->
 ```
 
-Loading the assets and cocatenation
------------------------------------
+This loader enforces near-flat structure of partials with only 2 levels of
+directories: group of partials and partial directory (the template itself is
+located in the folder named as the requested partial).
+
+Loading the assets and concatenation
+------------------------------------
 
 By passing the `assets` option array in during class construction, you can load
 any assets according to glob mask (e.g *.css, *.js). See `getAssetDefaults()`
