@@ -229,17 +229,21 @@ class AtomicLoader_AssetsConcatenator
             // Skip ' ' before ':;,{}()<>='
             if ($open===false && $str[$i]===' '
              && (
-                    $str[($i+1)]===' ' // Skip multiple ' ' (space characters)
-                 || $str[($i+1)]===':'
-                 || $str[($i+1)]===';'
-                 || $str[($i+1)]===','
-                 || $str[($i+1)]==='('
-                 || $str[($i+1)]===')'
-                 || $str[($i+1)]==='}'
-                 || $str[($i+1)]==='{'
-                 || $str[($i+1)]==='>'
-                 || $str[($i+1)]==='<'
-                 || $str[($i+1)]==='='
+                    $i+1 < $str_len // there must be at least one more character
+                    &&
+                    (
+                        $str[($i+1)]===' ' // Skip multiple ' ' (space characters)
+                     || $str[($i+1)]===':'
+                     || $str[($i+1)]===';'
+                     || $str[($i+1)]===','
+                     || $str[($i+1)]==='('
+                     || $str[($i+1)]===')'
+                     || $str[($i+1)]==='}'
+                     || $str[($i+1)]==='{'
+                     || $str[($i+1)]==='>'
+                     || $str[($i+1)]==='<'
+                     || $str[($i+1)]==='='
+                    )
                 )
             ) {
                 continue;
