@@ -25,28 +25,28 @@ use \attitude\Elements\HTTPException;
  */
 class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
 {
-    private $baseDir;
+    protected $baseDir;
 
-    private $publicDir = null;
-    private $publicURL = '';
+    protected $publicDir = null;
+    protected $publicURL = '';
 
     /**
      * @var array     Array of assets, where assets item is defined as an
      *                `array('glob' => (string) 'relative glob() expression', 'template' => (string) 'sprintf() template')`.
      */
-    private $assets = array();
+    protected $assets = array();
 
     /**
      * @var array      Hashes of assets that have been already loaded within this loader.
      */
-    private $assetsIndex = array();
+    protected $assetsIndex = array();
 
-    private $basename = 'template';
-    private $extension = '.mustache';
-    private $templates = array();
+    protected $basename = 'template';
+    protected $extension = '.mustache';
+    protected $templates = array();
 
-    private $enableFiltersPragma = true;
-    private $expandTranslationMarkup = true;
+    protected $enableFiltersPragma = true;
+    protected $expandTranslationMarkup = true;
 
     /**
      * Mustache filesystem Loader constructor (Change: Added basename option).
