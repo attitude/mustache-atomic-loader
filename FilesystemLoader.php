@@ -63,7 +63,15 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         }
 
         if (!is_dir($this->baseDir)) {
-            throw new \Mustache_Exception_RuntimeException(sprintf('FilesystemLoader baseDir must be a directory: %s', $baseDir));
+            // A little help: try to create if subdirectory is missing
+            if (!mkdir($this->baseDir, 0755, true)) {
+                throw new \Mustache_Exception_RuntimeException(sprintf('Failed to create deep structure. FilesystemLoader baseDir must be a directory: %s', $baseDir));
+            }
+
+            // Test again
+            if (!is_dir($this->baseDir)) {
+                throw new \Mustache_Exception_RuntimeException(sprintf('FilesystemLoader baseDir must be a directory: %s', $baseDir));
+            }
         }
 
         foreach ($options as $key => $option) {
