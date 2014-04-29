@@ -412,10 +412,8 @@ class AtomicLoader_AssetsConcatenator
                 $html = str_replace('<!--concatenated-assets:'.$type.'-->', implode("\n", $tags), $html);
             } elseif ($type==='css' && strstr($html, '</head>')) {
                 $html = str_replace('</head>', implode("\n", $tags).'</head>', $html);
-            } elseif ($type==='css' && strstr($html, '</body>')) {
-                $html = str_replace('</body>', implode("\n", $tags).'</body>', $html);
             } else {
-                $html.= implode("\n", $tags);
+                $html = str_replace('</body>', implode("\n", $tags)."\n".'</body>', $html);
             }
         }
 

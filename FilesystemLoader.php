@@ -63,7 +63,15 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
         }
 
         if (!is_dir($this->baseDir)) {
-            throw new \Mustache_Exception_RuntimeException(sprintf('FilesystemLoader baseDir must be a directory: %s', $baseDir));
+            // A little help: try to create if subdirectory is missing
+            if (!mkdir($this->baseDir, 0755, true)) {
+                throw new \Mustache_Exception_RuntimeException(sprintf('Failed to create deep structure. FilesystemLoader baseDir must be a directory: %s', $baseDir));
+            }
+
+            // Test again
+            if (!is_dir($this->baseDir)) {
+                throw new \Mustache_Exception_RuntimeException(sprintf('FilesystemLoader baseDir must be a directory: %s', $baseDir));
+            }
         }
 
         foreach ($options as $key => $option) {
@@ -139,16 +147,16 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
                 'glob'     => '*.css',
                 'template' => '<link concatenate href="%s" media="all" rel="stylesheet" type="text/css" />',
                 'regex'    => array (
-                    '/ +?<[^>]+?concatenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?\/>\n?/',
-                    '/ +?<style[^>]*?concatenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/style>\n?/s'
+                    '/ *?<[^>]+?concatenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?\/>\n?/',
+                    '/ *?<style[^>]*?concatenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/style>\n?/s'
                 )
             ),
             array(
                 'glob'     => '*.js',
                 'template' => '<script concatenate src="%s" type="text/javascript"></script>',
                 'regex'    => array (
-                    '/ +?<[^>]+?concatenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?><\/script>\n?/',
-                    '/ +?<script[^>]*?concatenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/script>\n?/s'
+                    '/ *?<[^>]+?concatenate[^>]*(?:href|src)="(?P<url>[^>]+?)?".*?type="(?P<type>.+?)"[^>]*?><\/script>\n?/',
+                    '/ *?<script[^>]*?concatenate[^>]*?type="(?P<type>.+?)"[^>]*?>(?P<content>.+?)<\/script>\n?/s'
                 )
             )
         );
