@@ -368,9 +368,19 @@ class AtomicLoader_AssetsConcatenator
             }
         }
 
-        // Concatenate
+        // Whate types to concatenate?
+        $templates = array();
         foreach ($this->assets as &$asset) {
-            $assets = &$asset_types[$asset['type']];
+            if (array_key_exists($asset['type'], $templates)) {
+                continue;
+            }
+
+            $templates[$asset['type']] = $asset['template'];
+        }
+
+        // Concatenate
+        foreach ($templates as $type => $template) {
+            $assets = &$asset_types[$type];
 
             if ($this->active && isset($assets['files'])) {
                 if (isset($assets['is_processed'])) {
@@ -387,22 +397,22 @@ class AtomicLoader_AssetsConcatenator
                 if (!file_exists($assets['path'])) {
                     try {
                         $this->storeCombination($assets['path'], $assets['files']);
-                        $results[$asset['type']][] = sprintf($asset['template'], $assets['url']);
+                        $results[$type][] = sprintf($template, $assets['url']);
                     } catch (\Exception $e) {
                         if (isset($assets['tags'])) {
-                            $results[$asset['type']] = array_merge((array) $results[$asset['type']], $assets['tags']);
+                            $results[$type] = array_merge((array) $results[$type], $assets['tags']);
                         }
 
                         trigger_error($e->getMessage(), E_USER_WARNING);
                     }
                 } else { // Already cached
-                    $results[$asset['type']][] = sprintf($asset['template'], $assets['url']);
+                    $results[$type][] = sprintf($template, $assets['url']);
                 }
             } elseif (isset($assets['tags'])) {
-                if (! isset($results[$asset['type']])) {
-                    $results[$asset['type']] = $assets['tags'];
+                if (! isset($results[$type])) {
+                    $results[$type] = $assets['tags'];
                 } else {
-                    $results[$asset['type']] = array_merge($results[$asset['type']], $assets['tags']);
+                    $results[$type] = array_merge($results[$type], $assets['tags']);
                 }
             }
         }
