@@ -160,25 +160,18 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
      * Examples:
      * - <input type="text" placeholder="[value]" />
      * - Some text node with [variable]
+     *
+     * Note: Supporting `_` is already covered by '\w', which is a word
+     *       character, same as writin [_a-zA-Z0-9]
+     *
      */
-    protected function transcriptToMustache($str, $feature=null)
+    protected function transcriptToMustache($str)
     {
-        if (empty($feature)) {
-            $feature = array('item' => '');
-        }
+        return preg_replace_callback('/\[([\.\w&;\/# -]+(?:\s*\|\s*[-_\w]+)?)\]/', function($matches) use ($feature) {
+            // Decode any `&entity;` by default
+            $matches[1] = html_entity_decode($matches[1]);
 
-        return preg_replace_callback('/\[([\.\w&;\/]+(?:\s*\|\s*[-_\w]+)?)\]/', function($matches) use ($feature) {
-            if (strstr($matches[0], '&')) {
-                $matches[1] = html_entity_decode($matches[1]);
-            }
-            $matches = explode('.', $matches[1]);
-
-            // Remove optional reference from actual context
-            if ($feature['item']===$matches[0]) {
-                array_shift($matches);
-            }
-
-            return str_replace('{{.', '{{', '{{'. implode('.', $matches) .'}}');
+            return '{{'. $matches[1] .'}}';
         }, $str);
     }
 
