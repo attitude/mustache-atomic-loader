@@ -432,7 +432,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                 }
 
                 $feature['context'] = implode('.', $feature['context']);
-                print_r($feature);
+                // print_r($feature);
 
                 // Tag to look for to close
                 $feature['tag'] = array_shift(explode(' ', trim($fragment, " \n\r\t</>")));
