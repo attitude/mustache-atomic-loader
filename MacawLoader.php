@@ -167,7 +167,11 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
      */
     protected function transcriptToMustache($str)
     {
-        return preg_replace_callback('/\[([\.\w&;\/# -]+(?:\s*\|\s*[-_\w]+)?)\]/', function($matches) use ($feature) {
+        return preg_replace_callback('/\[(\[?[\.\w&;\/# -]+(?:\s*\|\s*[-_\w]+)?\]?)\]/', function($matches) use ($feature) {
+            // Support for unescaped HTML as mustache {{{ variable }}} via [[ variable ]] in Macaw
+            if ($matches[1][0]==='[' && $matches[1][(strlen($matches[1])-1)]===']') {
+                $matches[1] = '{'.trim($matches[1], '[]').'}';
+            }
             // Decode any `&entity;` by default
             $matches[1] = html_entity_decode($matches[1]);
 
