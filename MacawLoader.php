@@ -392,6 +392,16 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
         // Source: http://www.w3.org/TR/html5/syntax.html#void-elements
         $void_tags = array("area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr");
         foreach ($html as $i => &$fragment) {
+            if (strarray($fragment, array('<link rel="stylesheet" href="css/standardize.css">', '<link rel="stylesheet" href="css/styles.css">'), true)) {
+                // Handle previous white space;
+                if (strlen(trim($html[($i-1)]))===0) {
+                    array_pop($out);
+                }
+
+                // Skip writing CSS to $out
+                continue;
+            }
+
             // echo "\n\n".str_pad($i, 5, ' ', STR_PAD_LEFT). $fragment;
             // echo "\nOpen ";print_r($open);
 
