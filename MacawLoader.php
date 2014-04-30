@@ -452,7 +452,11 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                 // print_r($feature);
 
                 // Tag to look for to close
-                $feature['tag'] = array_shift(explode(' ', trim($fragment, " \n\r\t</>")));
+                $feature['tag'] = explode(' ', trim($fragment, " \n\r\t</>"));
+                // Cannot be in ine line
+                // PHP Strict Standards:  Only variables should be passed by reference
+                $feature['tag'] = array_shift($feature['tag']);
+
 
                 // Pretty spaces
                 $feature['spaces'] = $i===0 ? '' : preg_replace('/[^ ]/', '', $html[($i-1)]);
@@ -512,7 +516,10 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                     }
                 } elseif (strstr($fragment, '<')) {
                     // New child tag creates empty feature
-                    $tag = array_shift(explode(' ', trim($fragment, " \n\r\t</>")));
+                    $tag = explode(' ', trim($fragment, " \n\r\t</>"));
+                    // Cannot be in ine line
+                    // PHP Strict Standards:  Only variables should be passed by reference
+                    $tag = array_shift($tag);
 
                     // Skip autoclosing tags
                     if (! in_array($tag, $void_tags)) {
