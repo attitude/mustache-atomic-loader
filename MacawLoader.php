@@ -474,7 +474,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                     $out[] = "{{#{$feature['hasSection']}}}\n{$feature['spaces']}";
                 }
 
-                if (in_array($tag, $void_tags)) {
+                if (in_array($feature['tag'], $void_tags)) {
                     exit('@TODO: Self-closing tags.');
                 }
 
