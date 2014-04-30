@@ -410,7 +410,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                 );
 
                 $lookup = $class[1];
-                $class = str_replace($lookups, '', $class[2]);
+                $class = trim(str_replace($lookups, '', $class[2]), '-');
 
                 if (strstr($class, '-in-')) {
                     list($feature['item'], $feature['context']) = explode('-in-', $class);
