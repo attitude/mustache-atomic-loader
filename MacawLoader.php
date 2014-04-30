@@ -160,7 +160,10 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
             $feature = array('item' => '');
         }
 
-        return preg_replace_callback('/\[([\.\w]+(?:\s*\|\s*[-_\w]+)?)\]/', function($matches) use ($feature) {
+        return preg_replace_callback('/\[([\.\w&;\/]+(?:\s*\|\s*[-_\w]+)?)\]/', function($matches) use ($feature) {
+            if (strstr($matches[0], '&')) {
+                $matches[1] = html_entity_decode($matches[1]);
+            }
             $matches = explode('.', $matches[1]);
 
             // Remove optional reference from actual context
