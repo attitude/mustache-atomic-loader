@@ -118,7 +118,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
 
                 // Mustache already cached and newer
                 if (file_exists($mustache_file) && filemtime($mustache_file) > $html_file_mtime) {
-                    // continue;
+                    continue;
                 }
 
                 $html = $this->enhanceMacaw($html_file)."\n";
