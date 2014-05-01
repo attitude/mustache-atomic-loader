@@ -341,12 +341,12 @@ class AtomicLoader_AssetsConcatenator
                                 }
                             } else {
                                 // Store tag wich cannot be concatenated:
-                                $results[$match['type']] = $match[0];
+                                $asset_types[$match['type']]['tags'][]  = trim($match[0]);
                             }
                         } else {
                             // @TODO: Fetch remotes
                             // Store tag wich cannot be concatenated:
-                            $results[$match['type']] = $match[0];
+                            $asset_types[$match['type']]['tags'][]  = trim($match[0]);
                         }
                     } elseif (isset($match['content'])) {
                         // storeCombination relies on "\n" check, otherwise it considers it a path
