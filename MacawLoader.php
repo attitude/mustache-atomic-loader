@@ -97,9 +97,18 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                                 $absrel_url = str_replace($this->publicDir, $this->publicURL, $asset_file);
 
                                 // Fix the relative URLS in CSS
-                                if ($ext==='css' && pathinfo($asset_file, PATHINFO_FILENAME)!=='standardize') {
-                                    $css = str_replace("url('../", "url('".dirname(dirname($absrel_url))."/", file_get_contents($asset_file));
-                                    file_put_contents($asset_file, $css);
+                                if ($ext==='css'
+                                 && pathinfo($asset_file, PATHINFO_FILENAME)!=='standardize'
+                                ) {
+                                    $asset_lock = dirname($asset_file).'/.'.basename($asset_file);
+                                    $asset_lock_time = (int) @file_get_contents($asset_lock);
+
+                                    if ($asset_lock_time !== filemtime($asset_file)) {
+                                        $css = str_replace("url('../", "url('".dirname(dirname($absrel_url))."/", file_get_contents($asset_file));
+                                        file_put_contents($asset_file, $css);
+                                        // Since it's just been changed, store it's mod time to compare later
+                                        file_put_contents($asset_lock, filemtime($asset_file));
+                                    }
                                 }
 
                                 $mcw_files['assets'][$ext][] = sprintf($asset['template'], $absrel_url);
