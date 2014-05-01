@@ -420,7 +420,7 @@ class AtomicLoader_AssetsConcatenator
         foreach ($results as $type => &$tags) {
             if (strstr($html, '<!--concatenated-assets:'.$type.'-->')) {
                 $html = str_replace('<!--concatenated-assets:'.$type.'-->', implode("\n", $tags), $html);
-            } elseif ($type==='css' && strstr($html, '</head>')) {
+            } elseif ($type==='text/css' && strstr($html, '</head>')) {
                 $html = str_replace('</head>', implode("\n", $tags).'</head>', $html);
             } else {
                 $html = str_replace('</body>', implode("\n", $tags)."\n".'</body>', $html);
