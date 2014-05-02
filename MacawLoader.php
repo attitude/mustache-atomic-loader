@@ -189,6 +189,30 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
     }
 
     /**
+     * Helper to check array needles against the haystack
+     *
+     * @param $haystack string The input string
+     */
+    function strarray($haystack, array $needles, $match_any=false)
+    {
+        foreach ($needles as &$needle) {
+            $found = !! strstr($haystack, $needle);
+
+            // Logical AND
+            if ($match_any && $found===true) {
+                return true;
+            }
+
+            // Logical OR
+            if (!$match_any && $found===false) {
+                return false;
+            }
+        }
+
+        return ! $match_any;
+    }
+
+    /**
      * Replace visually nice markup from Macaw
      *
      * Note: This not Mustache supported format, but the parent class
@@ -373,30 +397,6 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
         $lookups = array('repeat', 'only-if');
         $lookup_class_regex = '('.implode('|', $lookups).')-([^\s]+)';
 
-        /**
-         * Helper to check array needles against the haystack
-         *
-         * @param $haystack string The input string
-         */
-        function strarray($haystack, array $needles, $match_any=false)
-        {
-            foreach ($needles as &$needle) {
-                $found = !! strstr($haystack, $needle);
-
-                // Logical AND
-                if ($match_any && $found===true) {
-                    return true;
-                }
-
-                // Logical OR
-                if (!$match_any && $found===false) {
-                    return false;
-                }
-            }
-
-            return ! $match_any;
-        }
-
         $out       = array();
         $feature   = null;
         $open      = array();
@@ -405,7 +405,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
         // Source: http://www.w3.org/TR/html5/syntax.html#void-elements
         $void_tags = array("area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr");
         foreach ($html as $i => &$fragment) {
-            if (strarray($fragment, array('<link rel="stylesheet" href="css/standardize.css">', '<link rel="stylesheet" href="css/styles.css">'), true)) {
+            if ($this->strarray($fragment, array('<link rel="stylesheet" href="css/standardize.css">', '<link rel="stylesheet" href="css/styles.css">'), true)) {
                 // Handle previous white space;
                 if (strlen(trim($html[($i-1)]))===0) {
                     array_pop($out);
@@ -418,12 +418,12 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
             // echo "\n\n".str_pad($i, 5, ' ', STR_PAD_LEFT). $fragment;
             // echo "\nOpen ";print_r($open);
 
-            if (strarray($fragment, array('<img','"images/'))) {
+            if ($this->strarray($fragment, array('<img','"images/'))) {
                 $fragment = str_replace('"images/', '"'.str_replace($this->publicDir, $this->publicURL, dirname($html_file)).'/images/', $fragment);
             }
 
             // Open tag; Using strstr() which is faster than regex first
-            if (strarray($fragment, $lookups, true) && preg_match('/class=[\'"].*?'.$lookup_class_regex.'.*?[\'"]/', $fragment, $class)) {
+            if ($this->strarray($fragment, $lookups, true) && preg_match('/class=[\'"].*?'.$lookup_class_regex.'.*?[\'"]/', $fragment, $class)) {
                 $feature = array(
                     'tag'      => null,
                     'name'     => $class[1],
