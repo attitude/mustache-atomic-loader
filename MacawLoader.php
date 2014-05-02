@@ -246,7 +246,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                 $match = trim($match[0], ' ^');
 
                 // Pluralisation: Fix multiple '?'
-                if (substr_count($match, '?')) {
+                if (substr_count($match, '?') && (substr_count($match, ':') - substr_count($match, '\:') > 0)) {
                     // Only the first '?' is vital
                     $origpos = strpos($match, '?');
                     $match[$origpos] = '^';
