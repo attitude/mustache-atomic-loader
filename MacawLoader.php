@@ -59,7 +59,8 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
             $folder = array_shift($name);
 
             if (!in_array($folder, $allowed_folders)) {
-                throw new \Mustache_Exception_RuntimeException('Macaw Loader can load either full page HTML (view) or contents of <body> element (section).' );
+                // Skip: Macaw Loader can load either full page HTML (view) or contents of <body> element (section)
+                return;
             }
 
             $name = implode('-', $name);
