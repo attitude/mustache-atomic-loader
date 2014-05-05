@@ -538,7 +538,7 @@ HTML;
          * - `class="title.only-if-parent-title"`
          */
         $lookups = array('repeat', 'only-if');
-        $lookup_class_regex = '('.implode('|', $lookups).')-([^\s]+)';
+        $lookup_class_regex = '('.implode('|', $lookups).')-([^\s"\']+)';
 
         $out       = array();
         $feature   = null;
