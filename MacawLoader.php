@@ -545,6 +545,18 @@ HTML;
         $open      = array();
         $last      = array();
 
+        $absrel_url = str_replace($this->publicDir, $this->publicURL, dirname($html_file));
+
+        // If on same domain, remove the http://domain
+        //
+        // Should help with uploading to live server
+        // to work out-of-the box without the need to
+        // republish from Macaw to trigger regeneration
+        // of CSS and mustache templates.
+        if (strstr($absrel_url, $_SERVER['HTTP_HOST'])) {
+            $absrel_url = substr($absrel_url, (strpos($absrel_url, $_SERVER['HTTP_HOST']) + strlen($_SERVER['HTTP_HOST'])));
+        }
+
         // Source: http://www.w3.org/TR/html5/syntax.html#void-elements
         $void_tags = array("area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr");
         foreach ($html as $i => &$fragment) {
@@ -562,7 +574,7 @@ HTML;
             // echo "\nOpen ";print_r($open);
 
             if ($this->strarray($fragment, array('<img','"images/'))) {
-                $fragment = str_replace('"images/', '"'.str_replace($this->publicDir, $this->publicURL, dirname($html_file)).'/images/', $fragment);
+                $fragment = str_replace('"images/', '"'.$absrel_url.'/images/', $fragment);
             }
 
             // Open tag; Using strstr() which is faster than regex first
