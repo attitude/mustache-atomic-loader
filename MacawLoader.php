@@ -97,6 +97,16 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                             foreach ($asset_files as $asset_file) {
                                 $absrel_url = str_replace($this->publicDir, $this->publicURL, $asset_file);
 
+                                // If on same domain, remove the http://domain
+                                //
+                                // Should help with uploading to live server
+                                // to work out-of-the box without the need to
+                                // republish from Macaw to trigger regeneration
+                                // of CSS and mustache templates.
+                                if (strstr($absrel_url, $_SERVER['HTTP_HOST'])) {
+                                    $absrel_url = substr($absrel_url, (strpos($absrel_url, $_SERVER['HTTP_HOST']) + strlen($_SERVER['HTTP_HOST'])))."\n";
+                                }
+
                                 // Fix the relative URLS in CSS
                                 if ($ext==='css'
                                  && pathinfo($asset_file, PATHINFO_FILENAME)!=='standardize'
