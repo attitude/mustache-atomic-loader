@@ -107,6 +107,18 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
 
                                     if ($asset_lock_time < filemtime($asset_file)) {
                                         $css = str_replace("url('../", "url('".dirname(dirname($absrel_url))."/", file_get_contents($asset_file));
+                                        // Apply filter by setting closure in /apps/yourapp/config.php, e.g.:
+                                        //
+                                        // DependencyContainer::set('FilterMacawCSS', function($css) {
+                                        //     return doSomeMagicWithCSS($css);
+                                        // });
+                                        //
+                                        if ($f = DependencyContainer::get('FilterMacawCSS', false)) {
+                                            if (is_callable($f)) {
+                                                $css = $f->__invoke($css);
+                                            }
+                                        }
+                                        // Finaly write the new CSS
                                         file_put_contents($asset_file, $css);
 
                                         // Store swatches in the lock file
