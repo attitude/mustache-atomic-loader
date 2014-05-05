@@ -631,25 +631,30 @@ HTML;
                     $feature['hasSection'] = implode('.', $hasSection);
                 }
 
-                // Write buffer with opening tag
-                if (!isset($feature['hasSection'])) {
-                    $out[] = "{{#{$feature['context']}}}\n{$feature['spaces']}";
-                } elseif(!! DependencyContainer::get('Macaw::useHasSections', true)) {
-                    $out[] = "{{#{$feature['hasSection']}}}\n{$feature['spaces']}";
-                }
-
                 if (in_array($feature['tag'], $void_tags)) {
-                    exit('@TODO: Self-closing tags.');
-                }
+                    // Open condition
+                    $out[] = "{{#{$feature['context']}}}\n{$feature['spaces']}";
+                    // Write buffer
+                    $out[] = $this->transcriptToMustache($fragment, $feature);
+                    // Close condition
+                    $out[] = "\n{$feature['spaces']}{{/{$feature['context']}}}";
+                } else {
+                    // Write buffer with opening tag
+                    if (!isset($feature['hasSection'])) {
+                        $out[] = "{{#{$feature['context']}}}\n{$feature['spaces']}";
+                    } elseif(!! DependencyContainer::get('Macaw::useHasSections', true)) {
+                        $out[] = "{{#{$feature['hasSection']}}}\n{$feature['spaces']}";
+                    }
 
-                $open[] = $feature;
-                // echo "\n".'Open: ';print_r($feature);
+                    $open[] = $feature;
+                    // echo "\n".'Open: ';print_r($feature);
 
-                // Write buffer
-                $out[] = $this->transcriptToMustache($fragment, $feature);
+                    // Write buffer
+                    $out[] = $this->transcriptToMustache($fragment, $feature);
 
-                if (isset($feature['hasSection'])) {
-                    $out[] = "\n{$feature['spaces']}  {{#{$feature['context']}}}";
+                    if (isset($feature['hasSection'])) {
+                        $out[] = "\n{$feature['spaces']}  {{#{$feature['context']}}}";
+                    }
                 }
             } elseif(count($open)) {
                 if (strstr($fragment, '</')) {
