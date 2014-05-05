@@ -320,9 +320,9 @@ class AtomicLoader_AssetsConcatenator
 
                         // Is local?
                         if (!strstr($match['url'], '://')) {
-                            if ($match['file'] = realpath($this->publicDir.'/'.ltrim($match['url'], '/'))) {
+                            if ($match['file'] = realpath($this->publicDir.'/'.ltrim(trim($match['url']), '/'))) {
                                 // Do not load more than one asset instance
-                                if (!isset($asset_types[$match['type']]) || !in_array($match['file'], $asset_types[$match['type']]['files'])) {
+                                if (!isset($asset_types[$match['type']]) || !isset($asset_types[$match['type']]['files']) || !in_array($match['file'], $asset_types[$match['type']]['files'])) {
                                     $asset_types[$match['type']]['files'][] = $match['file'];
                                     $asset_types[$match['type']]['tags'][]  = trim($match[0]);
 
@@ -353,7 +353,7 @@ class AtomicLoader_AssetsConcatenator
                         $match['content'] = $this->trimEachLine($match['content'], $this->minify)."\n";
 
                         // Do not load more than one asset instance
-                        if (!isset($asset_types[$match['type']]) || !in_array($match['content'], $asset_types[$match['type']]['files'])) {
+                        if (!isset($asset_types[$match['type']]) || !isset($asset_types[$match['type']]['files']) || !in_array($match['content'], $asset_types[$match['type']]['files'])) {
                             $asset_types[$match['type']]['files'][] = $match['content'];
                             $asset_types[$match['type']]['tags'][]  = trim($match[0]);
 
