@@ -104,7 +104,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                                 // republish from Macaw to trigger regeneration
                                 // of CSS and mustache templates.
                                 if (strstr($absrel_url, $_SERVER['HTTP_HOST'])) {
-                                    $absrel_url = substr($absrel_url, (strpos($absrel_url, $_SERVER['HTTP_HOST']) + strlen($_SERVER['HTTP_HOST'])))."\n";
+                                    $absrel_url = substr($absrel_url, (strpos($absrel_url, $_SERVER['HTTP_HOST']) + strlen($_SERVER['HTTP_HOST'])));
                                 }
 
                                 // Fix the relative URLS in CSS
