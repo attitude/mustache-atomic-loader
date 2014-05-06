@@ -537,11 +537,21 @@ HTML;
          * - `class="title.only-if-title"`
          * - `class="title.only-if-parent-title"`
          */
-        $lookups = array('repeat', 'only-if');
-        $lookup_class_regex = '('.implode('|', $lookups).')-([^\s"\']+)';
+        $binds   = array('bind-value');
+        $lookups = array('repeat', 'only-if', 'only-ifnot', 'bind-value');
+
+        // Feature specific to DataPreprocessor, which walks data befor render
+        // and counts items array.
+        //
+        // This loader can create {{#hasItems}}...{{/hasItems}} to use with this
+        // directive
+        $use_has_section   = !! DependencyContainer::get('Macaw::useHasSections', true);
+
+        // Whether to strip directives
+        $strip_directives = !! DependencyContainer::get('Macaw::stripDirectives', true);
 
         $out       = array();
-        $feature   = null;
+        $directive   = null;
         $open      = array();
         $last      = array();
 
@@ -559,154 +569,181 @@ HTML;
 
         // Source: http://www.w3.org/TR/html5/syntax.html#void-elements
         $void_tags = array("area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr");
+
         foreach ($html as $i => &$fragment) {
+            // Skip  writing default Macaw CSS to $out
             if ($this->strarray($fragment, array('<link rel="stylesheet" href="css/standardize.css">', '<link rel="stylesheet" href="css/styles.css">'), true)) {
-                // Handle previous white space;
+                // Remove previously added white space;
                 if (strlen(trim($html[($i-1)]))===0) {
                     array_pop($out);
                 }
 
-                // Skip writing CSS to $out
+                // The skip
                 continue;
             }
 
-            // echo "\n\n".str_pad($i, 5, ' ', STR_PAD_LEFT). $fragment;
-            // echo "\nOpen ";print_r($open);
-
+            // Replace path to images
             if ($this->strarray($fragment, array('<img','"images/'))) {
                 $fragment = str_replace('"images/', '"'.$absrel_url.'/images/', $fragment);
             }
 
-            // Open tag; Using strstr() which is faster than regex first
-            if ($this->strarray($fragment, $lookups, true) && preg_match('/class=[\'"].*?'.$lookup_class_regex.'.*?[\'"]/', $fragment, $class)) {
-                $feature = array(
-                    'tag'      => null,
-                    'name'     => $class[1],
-                    // 'original' => $class[1].'-'.$class[2],
-                    'item'     => '',
-                    'context'  => ''
-                );
+            $is_opening_tag = false;
+            $is_selfclosing = false;
 
-                $lookup = $class[1];
-                $class = trim(str_replace($lookups, '', $class[2]), '-');
-
-                if (strstr($class, '-in-')) {
-                    list($feature['item'], $feature['context']) = explode('-in-', $class);
-                } else {
-                    $feature['context'] = $class;
-                }
-
-                // Context stack
-
-                // Marked as camelCase by class prefixed an suffixed with '_'
-                // If you ever need to mix camelCase_byAnyChance, note, that
-                // double`__` are kept as single `_`
-                $feature['context'] = explode('-', $feature['context']);
-                foreach ($feature['context'] as &$v) {
-                    if ($v[0]==='_' && $v[(strlen($v)-1)]==='_') {
-                        $v = explode('  ', str_replace('_', ' ', $v));
-                        foreach ($v as &$_v) {
-                            $_v = str_replace(' ', '', lcfirst(ucwords(trim($_v))));
-                        }
-                        $v = implode('_', $v);
-                    }
-                }
-
-                $feature['context'] = implode('.', $feature['context']);
-                // print_r($feature);
-
-                // Tag to look for to close
-                $feature['tag'] = explode(' ', trim($fragment, " \n\r\t</>"));
+            // Extract fragment's tag
+            if (strstr($fragment, '<')) {
+                $tag = explode(' ', trim($fragment, " \n\r\t</>"));
                 // Cannot be in ine line
                 // PHP Strict Standards:  Only variables should be passed by reference
-                $feature['tag'] = array_shift($feature['tag']);
-
-
-                // Pretty spaces
-                $feature['spaces'] = $i===0 ? '' : preg_replace('/[^ ]/', '', $html[($i-1)]);
-
-                if ($lookup === 'repeat') {
-                    $hasSection = explode('.', $feature['context']);
-                    $hasSection[(count($hasSection)-1)] = 'has'.ucfirst($hasSection[(count($hasSection)-1)]);
-                    $feature['hasSection'] = implode('.', $hasSection);
-                }
-
-                if (in_array($feature['tag'], $void_tags)) {
-                    // Open condition
-                    $out[] = "{{#{$feature['context']}}}\n{$feature['spaces']}";
-                    // Write buffer
-                    $out[] = $this->transcriptToMustache($fragment, $feature);
-                    // Close condition
-                    $out[] = "\n{$feature['spaces']}{{/{$feature['context']}}}";
-                } else {
-                    // Write buffer with opening tag
-                    if (!isset($feature['hasSection'])) {
-                        $out[] = "{{#{$feature['context']}}}\n{$feature['spaces']}";
-                    } elseif(!! DependencyContainer::get('Macaw::useHasSections', true)) {
-                        $out[] = "{{#{$feature['hasSection']}}}\n{$feature['spaces']}";
-                    }
-
-                    $open[] = $feature;
-                    // echo "\n".'Open: ';print_r($feature);
-
-                    // Write buffer
-                    $out[] = $this->transcriptToMustache($fragment, $feature);
-
-                    if (isset($feature['hasSection'])) {
-                        $out[] = "\n{$feature['spaces']}  {{#{$feature['context']}}}";
-                    }
-                }
-            } elseif(count($open)) {
-                if (strstr($fragment, '</')) {
-                    // Level up
-                    $feature = array_pop($open);
-                    // echo "\n".'Close: ';print_r($feature);
-
-                    // Found the closing tag match
-                    if (trim($fragment, '</>') !== $feature['tag']) {
-                        throw new HTTPException(500, 'Closing tags mismatch near tag `'.$fragment.'` vs '.$feature['tag']);
-                    }
-
-                    if (isset($feature['context'])) {
-                        if (isset($feature['hasSection'])) {
-                            $out[] = "  {{/{$feature['context']}}}\n{$feature['spaces']}";
-                        }
-
-                        $out[] = $this->transcriptToMustache($fragment, $feature);
-
-                        // Write buffer with closing tag
-                        if (!isset($feature['hasSection'])) {
-                            $out[] = "\n{$feature['spaces']}{{/{$feature['context']}}}";
-                        } elseif(!! DependencyContainer::get('Macaw::useHasSections', true)) {
-                            $out[] = "\n{$feature['spaces']}{{/{$feature['hasSection']}}}";
-                        }
-                    } else {
-                        $out[] = $this->transcriptToMustache($fragment, $feature);
-                    }
-                } elseif (strstr($fragment, '<')) {
-                    // New child tag creates empty feature
-                    $tag = explode(' ', trim($fragment, " \n\r\t</>"));
-                    // Cannot be in ine line
-                    // PHP Strict Standards:  Only variables should be passed by reference
-                    $tag = array_shift($tag);
-
-                    // Skip autoclosing tags
-                    if (! in_array($tag, $void_tags)) {
-                        $feature = array('tag' => $tag);
-                        $open[] = $feature;
-
-                        // echo "\n".'Open: ';print_r($feature);
-                    }
-
-                    // Write buffer
-                    $out[] = $this->transcriptToMustache($fragment, $feature);
-                } else {
-                    // Write buffer
-                    $out[] = $this->transcriptToMustache($fragment, $feature);
-                }
+                $tag = array_shift($tag);
+                $is_opening_tag = !strstr($fragment, '</');
+                $is_selfclosing = (in_array($tag, $void_tags));
             } else {
-                // Write buffer
-                $out[] = $this->transcriptToMustache($fragment, $feature);
+                // Text node
+                $tag = false;
+            }
+
+
+            // Write text nodes to buffer
+            if (!$tag) {
+                $out[] = $this->transcriptToMustache($fragment);
+            } else{
+                if ($is_opening_tag) {
+                    // Tag conditionals
+                    $directives = array('tag' => $tag, 'before' => array(), 'after' => array());
+
+                    if (preg_match('/class=[\'"](.*?)[\'"]/', $fragment, $classes)) {
+                        // ... into array of classes:
+                        $classes_original = $classes[1];
+                        $classes = explode(' ', $classes[1]);
+
+                        // Pretty spaces
+                        $spaces = $i===0 ? '' : preg_replace('/[^ ]/', '', $html[($i-1)]);
+
+                        // Walk classes and prepare directives
+                        foreach ($classes as &$class) {
+                            $mustache_tags = array();
+
+                            // Matches asny lookup
+                            //
+                            // groop 1: prefix
+                            // group 2: lookup
+                            // group 3: context
+                            if (preg_match('/(.*)('.implode('|', $lookups).')-(.+)/', $class, $lookup)) {
+                                // @todo: maybe future feature support syntax like: repeat-item-in-context
+                                if (strstr($lookup[3], '-in-')) {
+                                    // item is just DEV NULL for now
+                                    list($item, $lookup[3]) = explode('-in-', $lookup[3]);
+                                }
+
+                                // Decode the Mustache context
+                                $context = explode('-', $lookup[3]);
+
+                                // Handle the camelCase for each context level
+                                foreach ($context as &$v) {
+                                    if ($v[0]==='_' && $v[(strlen($v)-1)]==='_') {
+                                        $v = explode('  ', str_replace('_', ' ', $v));
+                                        foreach ($v as &$_v) {
+                                            $_v = str_replace(' ', '', lcfirst(ucwords(trim($_v))));
+                                        }
+                                        $v = implode('_', $v);
+                                    }
+                                }
+
+                                // Build "dot notation" context
+                                $context = implode('.', $context);
+
+                                if ($lookup[2]==='bind-value') {
+                                    // Just replace and move on, no need to commit to $out
+                                    $class = $lookup[1]."{{{$context}}}";
+                                } else {
+                                    if ($strip_directives) {
+                                        $class = '';
+                                    }
+
+                                    // Special cases for repeat sections
+                                    if ($lookup[2]==='repeat') {
+                                        $hasSection = false;
+
+                                        if($use_has_section) {
+                                            $hasSection = explode('.', $context);
+                                            $hasSection[(count($hasSection)-1)] = 'has'.ucfirst($hasSection[(count($hasSection)-1)]);
+                                            $hasSection = implode('.', $hasSection);
+                                        }
+
+                                        // New directive
+                                        if ($hasSection) {
+                                            $directives['before'][]  = array('context' => $hasSection, 'spaces' => $spaces, 'inner' => false, 'inverse' => false);
+                                        }
+
+                                        // New directive
+                                        $directives['after'][]  = array('context' => $context, 'spaces' => $spaces, 'inner' => true, 'inverse' => false);
+                                    } elseif ($lookup[2]==='only-ifnot') {
+                                        $directives['before'][]  = array('context' => $context, 'spaces' => $spaces, 'inner' => false, 'inverse' => true);
+                                    } else {
+                                        $directives['before'][]  = array('context' => $context, 'spaces' => $spaces, 'inner' => false, 'inverse' => false);
+                                    }
+                                }
+                            }
+                        }
+
+                        $fragment = str_replace($classes_original, implode(' ', array_filter($classes)), $fragment);
+                    }
+                } else {
+                    // Take info from stash
+                    $directives = array_pop($open);
+                }
+
+                if ($is_opening_tag && !$is_selfclosing) {
+                    $open[] = $directives;
+                }
+
+                if ($is_opening_tag || $is_selfclosing) {
+                    // Write opening directives before tag
+                    if (!empty($directives['before'])) {
+                        foreach ($directives['before'] as &$directive) {
+                            if ($directive['inverse']) {
+                                $out[] = "{{^{$directive['context']}}}\n{$directive['spaces']}";
+                            } else {
+                                $out[] = "{{#{$directive['context']}}}\n{$directive['spaces']}";
+                            }
+                        }
+                    }
+                }
+
+                if ($directives['tag']===$tag) {
+                    if (!$is_opening_tag || $is_selfclosing) {
+                        if (!empty($directives['after'])) {
+                            foreach (array_reverse($directives['after']) as &$directive) {
+                                $out[] = ($directive['inner'] ? '  ' : '')."{{/{$directive['context']}}}\n{$directive['spaces']}";
+                            }
+                        }
+                    }
+                }
+
+                $out[] = $this->transcriptToMustache($fragment);
+
+                if ($is_opening_tag || $is_selfclosing) {
+                    if (!empty($directives['after'])) {
+                        foreach ($directives['after'] as &$directive) {
+                            if ($directive['inverse']) {
+                                $out[] = "\n{$directive['spaces']}".($directive['inner'] ? '  ' : '')."{{^{$directive['context']}}}";
+                            } else {
+                                $out[] = "\n{$directive['spaces']}".($directive['inner'] ? '  ' : '')."{{#{$directive['context']}}}";
+                            }
+                        }
+                    }
+                }
+
+                if ($directives['tag']===$tag) {
+                    if (!$is_opening_tag || $is_selfclosing) {
+                        if (!empty($directives['before'])) {
+                            foreach (array_reverse($directives['before']) as &$directive) {
+                                $out[] = "\n{$directive['spaces']}{{/{$directive['context']}}}";
+                            }
+                        }
+                    }
+                }
             }
         }
 
