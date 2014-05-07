@@ -269,7 +269,7 @@ HTML;
                 $mustache_file = "{$this->baseDir}/{$folder}/{$name}/{$this->basename}{$this->extension}";
 
                 // Mustache already cached and newer
-                if (file_exists($mustache_file) && filemtime($mustache_file) > $html_file_mtime) {
+                if (!(isset($_GET['macaw']) && $_GET['macaw']==='refresh') && (file_exists($mustache_file) && filemtime($mustache_file) > $html_file_mtime)) {
                     continue;
                 }
 
