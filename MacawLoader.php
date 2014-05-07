@@ -275,7 +275,7 @@ HTML;
 
                 $html = $this->enhanceMacaw($html_file)."\n";
 
-                if ($folder==='sections') {
+                if ($folder==='body') {
                     $body_start = strpos($html, '<body');
                     if ($body_start!==false) {
                         if ($body_start = strpos($html, '>', $body_start)) {
