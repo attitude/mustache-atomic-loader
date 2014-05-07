@@ -13,7 +13,7 @@ This component is designed to work with
 
 
 
-1 Support for translation markup in Mustache
+1/ Support for translation markup in Mustache
 --------------------------------------------
 
 You can use the extra markup for template translation included in this class.
@@ -32,7 +32,7 @@ Translating with pluralisation: `{{ count ? 'singular' : 'plural' }}`, e.g.:
 {{ people ? 'One person' : '{} people' | translate }}
 ```
 
-2 Atomic Design
+2/ Atomic Design
 ---------------
 
 Custom `getFileName()` method changes way to locate template files. Each partial
@@ -59,7 +59,7 @@ This loader enforces near-flat structure of partials with only 2 levels of
 directories: group of partials and partial directory (the template itself is
 located in the folder named as the requested partial).
 
-3 Loading the assets and concatenation
+3/ Loading the assets and concatenation
 --------------------------------------
 
 By passing the `assets` option array in during class construction, you can load
@@ -81,7 +81,7 @@ inline assets into one file.
 > only assets defined in the current page source. This might be awkward, but
 > it enables to load only styles necessary to render the current page.
 
-4 Macaw Loader
+4/ Macaw Loader
 --------------
 
 ** I've written [a tutorial how to convert Macaw into Publisher](http://www.martinadamko.sk/posts/152).**
@@ -91,50 +91,107 @@ There's of course need to mark objects in Macaw.
 
 ### 4.1 Supported markup:
 
-- Repeat content of element – add class `.repeat-`<mustache-context>
-- Non-false/non-empty display — `.only-if-`<mustache-context>
+- Repeat content of element – add class `.repeat-`**mustache-context**
+- Non-false/non-empty display — `.only-if-`**mustache-context**
+- False/empty sections — `.only-ifnot-`**mustache-context**
+- Bind value to create dynamic class name — *.any-class-prefix-*`bind-value-`**mustache-context**
 
-Replace **<mustache-context>** with data context you are used to from using
-mustache.
+Replace **<mustache-context>** with data scope/context as when using mustache, e.g.:
+`{{person.name}}`.
 
-#### 4.1.1 **`.only-if-` Eample**:
+#### 4.1.1 **`.only-if-`** and **`.only-ifnot-`** Eample**:
 
-- DOM in Macaw:
+DOM in Macaw:
   ```
-  – h2.only-if-website-title  <<< content of element: [ website.title ]
-  ```
-- converted Mustache:
-  ```html
-  {{#website.title}}
-  <h2>{{website.title}}</h2>
-  {{/website.title}}
+  – h1.only-if-website-title
+  – h1.only-ifnot-website-title
   ```
 
-#### 4.1.2 **`.repeat-` Eample**:
+Exported HTML from Macaw:
+```html
+<h1>[website.title]</h1>
+<h1>Default title</h1>
+```
 
-- DOM in Macaw:
-    ```
-    – ul.repeat-event-attendees
-      – li.attendee
-        – p.name <<< content of element: [ name ]
-    ```
-- converted Mustache:
-  ```html
-  {{#event.hasAttendees}}
-  <ul class="repeat-event-attendees">
-    {{#event.attendees}}
-    <li class="attendee">
-      <p class="name">{{name}}</p>
-    </li>
-    {{/event.attendees}}
-  </ul>
-  {{/event.hasAttendees}} <!--This is optional, works well with Data Preprocessor -->
-  ```
+Converted to Mustache:
+```html
+{{#website.title}}
+<h1>{{website.title}}</h1>
+{{/website.title}}
+{{^website.title}}
+<h1>Default title</h1>
+{{/website.title}}
+```
 
-`{{#event.hasAttendees}} … {{/event.hasAttendees}}` sections can be turned on.
-[Data Preprocessor](https://github.com/attitude/mustache-data-preprocessor)
-walks data and checks arrays if are empty. This way the the `<ul class="repeat-event-attendees"> … </ul>`
-is completely hidden when there are no attendees.
+Data (context/scope):
+```yaml
+website:
+  title: Some Fancy Website Title
+```
+
+If website.title is non-false produces HTML:
+```html
+<h1>Some Fancy Website Title</h1>
+```
+
+Else if website.title is empty/falsy produces HTML:
+```html
+<h1>Default title</h1>
+```
+
+#### 4.1.2 **`.repeat-`** and **`.bind-value-`** Eample**:
+
+DOM in Macaw:
+```
+– ul.statuses.repeat-statuses
+– li.status.status-is-bind-value-type
+```
+
+Exported HTML from Macaw:
+```html
+<ul class="statuses repeat-statuses">
+  <li class="status status-is-bind-value-type">[text]</li>
+</ul>
+```
+
+Converted to Mustache:
+```html
+{{#hasStatuses}}
+<ul class="statuses">
+  {{#statuses}}
+  <li class="status status-is-{{type}}">{{text}}</li>
+  {{/statuses}}
+</ul>
+{{/hasStatuses}}
+```
+
+Data (context/scope):
+```yaml
+---
+hasStatuses: 2
+statuses:
+-
+  type: success
+  text: Message sent OK
+-
+  type: error
+  text: Mesage failed to send
+...
+```
+> Note: `hasStatuses` is a feature of  [DataProcessor Mustache wrapper](https://github.com/attitude/mustache-data-preprocessor)
+> and by default setting **hasItems** section is turned off. See [Macaw loader comment around line 548](https://github.com/attitude/mustache-atomic-loader/blob/develop/MacawLoader.php#L548).
+
+
+Produces HTML:
+
+```html
+<ul class="statuses">
+  <li class="status status-is-success">Message sent OK</li>
+  <li class="status status-is-error">Message failed to send</li>
+</ul>
+```
+
+---
 
 ### 4.2 camelCase
 
@@ -151,7 +208,7 @@ of attribute you need in camelCase. You can mix both and use it only on one:
 Macaw Loader can extrat used colors from exportec CSS from Macaw. The LESS file
 is placed next to the `.mcw` file together with a HTML preview of all colours.
 
-5 Minification
+5/ Minification
 --------------
 
 Combining assets is important site speed optimisation, but it can be pushed more

@@ -52,7 +52,7 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
 {
     protected function getFileName($name)
     {
-        static $allowed_folders = array('views', 'sections');
+        static $allowed_folders = array('page', 'body');
 
         if (strstr($name, '/')) {
             $name = explode('/', $name);
@@ -545,7 +545,7 @@ HTML;
         //
         // This loader can create {{#hasItems}}...{{/hasItems}} to use with this
         // directive
-        $use_has_section   = !! DependencyContainer::get('Macaw::useHasSections', true);
+        $use_has_section   = !! DependencyContainer::get('Macaw::useHasSections', false);
 
         // Whether to strip directives, default is false.
         //
