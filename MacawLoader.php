@@ -97,16 +97,6 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                             foreach ($asset_files as $asset_file) {
                                 $absrel_url = str_replace($this->publicDir, $this->publicURL, $asset_file);
 
-                                // If on same domain, remove the http://domain
-                                //
-                                // Should help with uploading to live server
-                                // to work out-of-the box without the need to
-                                // republish from Macaw to trigger regeneration
-                                // of CSS and mustache templates.
-                                if (strstr($absrel_url, $_SERVER['HTTP_HOST'])) {
-                                    $absrel_url = substr($absrel_url, (strpos($absrel_url, $_SERVER['HTTP_HOST']) + strlen($_SERVER['HTTP_HOST'])));
-                                }
-
                                 // Fix the relative URLS in CSS
                                 if ($ext==='css'
                                  && pathinfo($asset_file, PATHINFO_FILENAME)!=='standardize'
@@ -115,8 +105,19 @@ class AtomicLoader_MacawLoader extends AtomicLoader_FilesystemLoader
                                     $asset_lock_html = $mcw_baseDir.'/'.$export.'.swatches.html';
                                     $asset_lock_time = (int) @filemtime($asset_lock);
 
-                                    if ($asset_lock_time < filemtime($asset_file)) {
-                                        $css = str_replace("url('../", "url('".dirname(dirname($absrel_url))."/", file_get_contents($asset_file));
+                                    if ((isset($_GET['macaw']) && $_GET['macaw']==='refresh') || $asset_lock_time < filemtime($asset_file)) {
+
+                                        $backup_file = $asset_file.'.backup';
+
+                                        // Since Macaw always replaces the export directory...
+                                        if (!file_exists($backup_file)) {
+                                            if (! copy($asset_file, $backup_file)) {
+                                                throw new HTTP_Exception(500, 'Macaw Loader: Failed to create a bakup of '. basename($asset_file));
+                                            }
+                                        }
+
+                                        $css = str_replace("url('../", "url('".dirname(dirname($absrel_url))."/", file_get_contents($backup_file));
+
                                         // Apply filter by setting closure in /apps/yourapp/config.php, e.g.:
                                         //
                                         // DependencyContainer::set('FilterMacawCSS', function($css) {
@@ -565,16 +566,6 @@ HTML;
         $last      = array();
 
         $absrel_url = str_replace($this->publicDir, $this->publicURL, dirname($html_file));
-
-        // If on same domain, remove the http://domain
-        //
-        // Should help with uploading to live server
-        // to work out-of-the box without the need to
-        // republish from Macaw to trigger regeneration
-        // of CSS and mustache templates.
-        if (strstr($absrel_url, $_SERVER['HTTP_HOST'])) {
-            $absrel_url = substr($absrel_url, (strpos($absrel_url, $_SERVER['HTTP_HOST']) + strlen($_SERVER['HTTP_HOST'])));
-        }
 
         // Source: http://www.w3.org/TR/html5/syntax.html#void-elements
         $void_tags = array("area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr");
