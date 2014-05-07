@@ -547,8 +547,17 @@ HTML;
         // directive
         $use_has_section   = !! DependencyContainer::get('Macaw::useHasSections', true);
 
-        // Whether to strip directives
-        $strip_directives = !! DependencyContainer::get('Macaw::stripDirectives', true);
+        // Whether to strip directives, default is false.
+        //
+        // Use `DependencyContainer::set('Macaw::stripDirectives', true);` to enable.
+        //
+        // If you use just one class, being the directive class, you'll loose the
+        // styling associated with the directive class. To solve it, use an extra
+        // class, e.g.:
+        //
+        // form.only-if-form      >>> form      ... fails since .only-if-form holds the CSS
+        // form.form.only-if-form >>> form.form ... OK since .form hodls the CSS
+        $strip_directives = !! DependencyContainer::get('Macaw::stripDirectives', false);
 
         $out       = array();
         $directive   = null;
