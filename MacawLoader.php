@@ -714,7 +714,7 @@ HTML;
                 if ($directives['tag']===$tag) {
                     if (!$is_opening_tag || $is_selfclosing) {
                         if (!empty($directives['after'])) {
-                            foreach (array_reverse($directives['after']) as &$directive) {
+                            foreach (array_reverse($directives['after']) as $directive) {
                                 $out[] = ($directive['inner'] ? '  ' : '')."{{/{$directive['context']}}}\n{$directive['spaces']}";
                             }
                         }
@@ -738,7 +738,7 @@ HTML;
                 if ($directives['tag']===$tag) {
                     if (!$is_opening_tag || $is_selfclosing) {
                         if (!empty($directives['before'])) {
-                            foreach (array_reverse($directives['before']) as &$directive) {
+                            foreach (array_reverse($directives['before']) as $directive) {
                                 $out[] = "\n{$directive['spaces']}{{/{$directive['context']}}}";
                             }
                         }
