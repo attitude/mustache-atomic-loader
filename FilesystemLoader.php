@@ -195,6 +195,12 @@ class AtomicLoader_FilesystemLoader extends Mustache_Loader_FilesystemLoader
             $assetFiles   = glob($assetPattern);
 
             foreach ($assetFiles as $assetFile) {
+                // Skip hidden files
+                $basename = basename($assetFile);
+                if ($basename[0]==='.') {
+                    continue;
+                }
+
                 $hash = md5($assetFile);
 
                 // Included previously?
