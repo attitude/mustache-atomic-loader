@@ -123,7 +123,25 @@ class AtomicLoader_AssetsConcatenator
     }
 
     private function hash($str) {
-        return strtr(base64_encode($this->hashStr($str)), array('+' => '-', '/' => '_', '=' => ''));
+        static $prefix, $suffix;
+
+        if (!isset($prefix)) {
+            if (defined('ATOMIC_CONCAT_PREFIX')) {
+                $prefix = ATOMIC_CONCAT_PREFIX;
+            } else {
+                $prefix = '';
+            }
+        }
+
+        if (!isset($suffix)) {
+            if (defined('ATOMIC_CONCAT_SUFFIX')) {
+                $suffix = ATOMIC_CONCAT_SUFFIX;
+            } else {
+                $suffix = '';
+            }
+        }
+
+        return $prefix.strtr(base64_encode($this->hashStr($str)), array('+' => '-', '/' => '_', '=' => '')).$suffix;
     }
 
     private function hashStr($str, $as_hex = false) {
@@ -388,7 +406,7 @@ class AtomicLoader_AssetsConcatenator
                 }
 
                 $assets['is_processed'] = true;
-                $assets['hash'] = $this->hash(implode("::", $assets['files']) .'::'.$assets['last_mod_time'] );
+                $assets['hash'] = $this->hash(implode("::", $assets['files']) .'::'.$assets['last_mod_time']);
 
                 $assets['file'] = '/'.$assets['ext'].'/'.$assets['hash'].'.'.$assets['ext'];
                 $assets['path'] = $this->publicStaticDir.$assets['file'];
