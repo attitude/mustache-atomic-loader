@@ -5,6 +5,7 @@ namespace attitude\Mustache;
 class AtomicLoader_AssetsConcatenator
 {
     public  $active  = true;
+    public  $minify  = true;
 
     private $sources = array();
 
@@ -19,8 +20,6 @@ class AtomicLoader_AssetsConcatenator
 
     private $publicURL = '';
     private $publicStaticURL = '';
-
-    private $minify = true;
 
     public function __construct($baseDir, array $options = array())
     {
@@ -165,7 +164,7 @@ class AtomicLoader_AssetsConcatenator
                 $cat.= $file;
             } else {
                 if ($str = file_get_contents($file)) {
-                    $cat.= $this->trimEachLine($str, $this->minify)."\n";
+                    $cat.= $this->trimEachLine($str, !!$this->minify)."\n";
                 } elseif ($str===false) {
                     throw new \Exception('Failed to read one of source files: '.$file);
                 }
@@ -368,7 +367,7 @@ class AtomicLoader_AssetsConcatenator
                         }
                     } elseif (isset($match['content'])) {
                         // storeCombination relies on "\n" check, otherwise it considers it a path
-                        $match['content'] = $this->trimEachLine($match['content'], $this->minify)."\n";
+                        $match['content'] = $this->trimEachLine($match['content'], !!$this->minify)."\n";
 
                         // Do not load more than one asset instance
                         if (!isset($asset_types[$match['type']]) || !isset($asset_types[$match['type']]['files']) || !in_array($match['content'], $asset_types[$match['type']]['files'])) {
