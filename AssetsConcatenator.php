@@ -180,6 +180,12 @@ class AtomicLoader_AssetsConcatenator
 
     private function trimEachLine($str, $minify = true)
     {
+        // Special case to keep minified JS as is
+        if ($str[0] === '/' && $str[1] === '*' && $str[2] === '!') {
+            return $str;
+        }
+
+        // Minification off
         if (!$minify) {
             $str = explode("\n", $str);
             foreach ($str as $i => &$line) {
